@@ -1,4 +1,4 @@
-
+<img width="1918" height="904" alt="image" src="https://github.com/user-attachments/assets/5c7a1794-3c3f-421f-9363-f297c27d0b7d" />
 # FRP Management UI Wiki
 
 Welcome to the official wiki for the FRP Management UI. This document provides a comprehensive guide to all the features and functionalities of the application.
@@ -38,7 +38,7 @@ This is the entry point to the application. Access is protected by a username an
     -   Password: `admin`
 -   **Functionality**: Users must enter their credentials to gain access to the dashboard. After updating credentials on the Settings page, the user will be redirected here to log in again.
 
-**Screenshot Placeholder:**
+
 ![Login Page](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/login.png?raw=true "The login screen for the FRP Management UI.")
 
 ---
@@ -47,8 +47,8 @@ This is the entry point to the application. Access is protected by a username an
 
 The Dashboard is the landing page after a successful login. It provides a high-level, real-time overview of your system and FRP connections.
 
-**Screenshot Placeholder:**
-![Dashboard View](wiki-images/dashboard.png "The main dashboard with all monitoring widgets.")
+
+![Dashboard View](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/dash.png?raw=true "The main dashboard with all monitoring widgets.")
 
 ### Widgets
 
@@ -73,8 +73,8 @@ The Dashboard is the landing page after a successful login. It provides a high-l
 
 This section is the control center for creating new FRP configurations and managing templates (presets). It is organized into four tabs.
 
-**Screenshot Placeholder:**
-![Setup & Presets Page](wiki-images/setup-page.png "The main setup page with its four primary tabs.")
+
+![Setup & Presets Page](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/setup.png?raw=true "The main setup page with its four primary tabs.")
 
 ### 4.1 Setup Client
 
@@ -89,8 +89,6 @@ This tab is for creating a new `frpc` (client) configuration and its associated 
 -   **Local Ports**: The local ports on the client machine to be exposed. You can specify single ports, commas, and ranges (e.g., `22, 80, 443, 6000-6010`).
 -   **Setup Client Button**: Submits the form, creates the `.toml` configuration file, and enables/starts the `frpc@<client-name>.service`.
 
-**Screenshot Placeholder:**
-![Setup Client Form](wiki-images/setup-client-form.png "The form for creating a new FRP client.")
 
 ### 4.2 Setup Server
 
@@ -104,8 +102,6 @@ This tab is for creating a new `frps` (server) configuration and its associated 
 -   **Auth Token**: The token clients must use to connect.
 -   **Setup Server Button**: Submits the form, creates the configuration file, and starts the `frps@<server-name>.service`.
 
-**Screenshot Placeholder:**
-![Setup Server Form](wiki-images/setup-server-form.png "The form for creating a new FRP server.")
 
 ### 4.3 Manage Presets
 
@@ -115,8 +111,8 @@ This tab allows you to create and delete reusable templates for both client and 
 -   **Create New Preset Form**: Fill out the details for a new preset and click "Save". The preset will appear in the "Existing Presets" list and the "Load Preset" dropdown on the setup forms.
 -   **Existing Presets List**: Shows all saved presets. Each item has a **Delete** button.
 
-**Screenshot Placeholder:**
-![Manage Presets Tab](wiki-images/manage-presets.png "The interface for creating and deleting presets.")
+
+
 
 ### 4.4 System Management
 
@@ -125,8 +121,7 @@ This tab provides high-level actions for the FRP installation itself.
 -   **Install/Update FRP**: Downloads the latest version of FRP from GitHub, installs the binaries (`frps`, `frpc`), and sets up the necessary systemd service template files. Use this for a first-time install or to upgrade.
 -   **Uninstall FRP**: **(Warning: Irreversible)** This action stops all services, removes all configuration files, deletes the binaries, and removes the systemd files. It completely scrubs FRP from the system. A confirmation prompt will appear before proceeding.
 
-**Screenshot Placeholder:**
-![System Management Tab](wiki-images/system-management.png "System-level install and uninstall options.")
+
 
 ---
 
@@ -134,8 +129,8 @@ This tab provides high-level actions for the FRP installation itself.
 
 This page is for the day-to-day management of your running FRP services.
 
-**Screenshot Placeholder:**
-![Manage FRP Page](wiki-images/manage-frp.png "The primary management interface for clients and servers.")
+
+![Manage FRP Page](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/manage.png?raw=true "The primary management interface for clients and servers.")
 
 ### 5.1 Clients Tab
 
@@ -146,8 +141,7 @@ This page is for the day-to-day management of your running FRP services.
     -   **Search Bar**: Instantly filter logs for specific keywords.
     -   **Level Filters**: Filter logs by severity: **INFO**, **WARN**, or **ERROR**.
 
-**Screenshot Placeholder:**
-![Manage Clients View](wiki-images/manage-clients.png "Detailed view of the client management tab with live logs.")
+
 
 ### 5.2 Servers Tab
 
@@ -161,8 +155,7 @@ Clicking the **Edit Config** button on any client or server tab takes you to thi
 -   **Config Content**: A text area containing the full `.toml` configuration file. You can make any manual edits here.
 -   **Save**: Saves the changes to the file and restarts the service to apply them.
 
-**Screenshot Placeholder:**
-![Edit Config Page](wiki-images/edit-config.png "The editor for manually changing a TOML configuration file.")
+
 
 ---
 
@@ -173,8 +166,8 @@ This page provides a simplified management interface for the EFRP service.
 -   **Controls**: **Start** and **Stop** buttons to manage the EFRP service.
 -   **Live Logs**: A real-time log viewer for the EFRP service, complete with search and level filtering.
 
-**Screenshot Placeholder:**
-![Manage EFRP Page](wiki-images/manage-efrp.png "The management interface for the EFRP service.")
+
+![Manage EFRP Page](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/EFRP.png?raw=true "The management interface for the EFRP service.")
 
 ---
 
@@ -187,8 +180,8 @@ This page gives a raw, text-based summary of the entire FRP setup, which can be 
 -   **Enabled Services**: A list of all `frpc` and `frps` services that are enabled to start on boot.
 -   **Server/Client Configs**: A directory listing of all `.toml` files in the server and client configuration folders.
 
-**Screenshot Placeholder:**
-![Show Status Page](wiki-images/show-status.png "The text-based status overview page.")
+
+![Show Status Page](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/status.png?raw=true "The text-based status overview page.")
 
 ---
 
@@ -202,27 +195,5 @@ This page allows you to manage the credentials for accessing the web UI.
 -   **Save Changes**: After saving, you will be logged out and redirected to the login page to sign in with your new credentials.
 
 **Screenshot Placeholder:**
-![Settings Page](wiki-images/settings-page.png "The user settings and password change form.")
+![Settings Page](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/settings.png?raw=true "The user settings and password change form.")
 
----
-
-## 9. How to Add Images to this Wiki
-
-Follow these steps to add screenshots to this document in your GitHub repository.
-
-1.  **Create an Image Directory**: In the root of your project repository, create a new folder named `wiki-images`.
-2.  **Take Screenshots**: Capture images of each relevant page or feature described in this wiki.
-3.  **Name and Save Images**: Save the screenshots with descriptive, lowercase names (e.g., `login-page.png`, `dashboard.png`) inside the `wiki-images` folder.
-4.  **Commit and Push**: Use Git to add, commit, and push the new `wiki-images` folder and its contents to your repository.
-    ```bash
-    git add wiki-images/
-    git commit -m "docs: Add screenshots for wiki"
-    git push
-    ```
-5.  **Update the Wiki**: Edit this `WIKI.md` file. The image links are already set up as placeholders. If your filenames match the placeholders, the images will appear automatically once they are pushed to the repository.
-
-    The syntax for an image in Markdown is:
-    `![Alt Text](path/to/image.png "Optional Title")`
-
-    For example:
-    `![Login Page](wiki-images/login-page.png "The login screen for the FRP Management UI.")`
