@@ -6,7 +6,7 @@ git clone https://github.com/md9786/FRP-Management-Webui.git &&
 cd FRP-Management-Webui && 
 git checkout 8d7019f96cf26a0079700a96171b539453533ff7 && 
 cp frp_ui /root/frp/ && 
-cp Source/EFRP.sh /root/frp/Source/ && 
+cp Source/EFRP.sh /root/frp/ && 
 cp -r Source/templates/* /root/frp/templates/ && 
 cd .. && 
 rm -rf FRP-Management-Webui && 
