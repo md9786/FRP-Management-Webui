@@ -39,7 +39,7 @@ This is the entry point to the application. Access is protected by a username an
 -   **Functionality**: Users must enter their credentials to gain access to the dashboard. After updating credentials on the Settings page, the user will be redirected here to log in again.
 
 **Screenshot Placeholder:**
-![Login Page](/main/screenshots/login.png "The login screen for the FRP Management UI.")
+![Login Page](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/login.png?raw=true "The login screen for the FRP Management UI.")
 
 ---
 
