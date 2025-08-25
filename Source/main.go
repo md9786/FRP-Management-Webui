@@ -1023,7 +1023,7 @@ func setupClient(c *gin.Context) {
 	}
 	authToken := c.PostForm("auth_token")
 	if authToken == "" {
-		authToken = "mikeesierrah"
+		authToken = "t.me/Orion_Group_support"
 	}
 	transport := c.PostForm("transport")
 	if transport == "" {
