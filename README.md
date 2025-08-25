@@ -1,4 +1,4 @@
-<img width="1918" height="904" alt="image" src="https://github.com/user-attachments/assets/5c7a1794-3c3f-421f-9363-f297c27d0b7d" />
+<img width="1918" height="904" alt="image" src="https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/dash.png?raw=true" />
 # FRP Management UI Wiki
 
 Welcome to the official wiki for the FRP Management UI. This document provides a comprehensive guide to all the features and functionalities of the application.
