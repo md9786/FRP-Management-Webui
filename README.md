@@ -1,85 +1,228 @@
-# Go-Based FRP Management UI
 
-A comprehensive, self-hosted web UI for managing [FRP (A fast reverse proxy)](https://github.com/fatedier/frp) clients and servers on a Linux system. Built with Go and a modern frontend stack, this dashboard provides real-time monitoring, configuration management, live log streaming, and more, all from a single, easy-to-use interface.
+# FRP Management UI Wiki
 
- 
-*(Note: Screenshot is a placeholder representation)*
+Welcome to the official wiki for the FRP Management UI. This document provides a comprehensive guide to all the features and functionalities of the application.
 
-## ✨ Features
+## Table of Contents
+1.  [Overview](#1-overview)
+2.  [Login Page](#2-login-page)
+3.  [Dashboard](#3-dashboard)
+4.  [Setup & Presets](#4-setup--presets)
+    - [4.1 Setup Client](#41-setup-client)
+    - [4.2 Setup Server](#42-setup-server)
+    - [4.3 Manage Presets](#43-manage-presets)
+    - [4.4 System Management](#44-system-management)
+5.  [Manage FRP](#5-manage-frp)
+    - [5.1 Clients Tab](#51-clients-tab)
+    - [5.2 Servers Tab](#52-servers-tab)
+    - [5.3 Editing a Configuration](#53-editing-a-configuration)
+6.  [Manage EFRP](#6-manage-efrp)
+7.  [Show Status](#7-show-status)
+8.  [Settings](#8-settings)
+9.  [How to Add Images to this Wiki](#9-how-to-add-images-to-this-wiki)
 
-- **Real-time Dashboard:** Monitor system vitals like CPU usage, RAM consumption, and live network throughput.
-- **Connection Overview:** See the status (Running, Stopped, Warning, Error) of all your FRP clients and servers at a glance.
-- **Live Network Graph:** Visualize network upload and download history over the last 5 minutes.
-- **Simplified Setup:** Configure and launch new `frps` servers and `frpc` clients directly from the web UI.
-- **Full Service Management:** Start, stop, and restart individual or all FRP services with a single click.
-- **Live Log Streaming:** View logs for any client or server in real-time, complete with search and filtering by log level (INFO, WARN, ERROR).
-- **In-Browser Configuration Editor:** Edit TOML configuration files directly in the browser and apply changes by restarting the service.
-- **Preset System:** Save and load common client and server configurations as presets to speed up new deployments.
-- **System Administration:** Includes one-click options to install the latest version of FRP or to completely uninstall it.
-- **Secure Access:** Features a user login system with options to change username and password.
-- **Modern, Responsive UI:** Built with Tailwind CSS for a clean and responsive experience on both desktop and mobile.
+---
 
-## 🛠️ Technology Stack
+## 1. Overview
 
-- **Backend:** Go, Gin Web Framework
-- **Frontend:** HTML5, Tailwind CSS, Vanilla JavaScript
-- **Real-time Communication:** WebSockets
-- **Data Visualization:** Chart.js
-- **System Metrics:** [gopsutil](https://github.com/shirou/gopsutil)
-- **Service Management:** Direct calls to `systemctl` for robust service handling.
+The FRP Management UI is a web-based graphical interface designed to simplify the installation, configuration, and management of FRP (Fast Reverse Proxy) clients and servers. It provides real-time system monitoring, live log streaming, and an intuitive preset system to streamline repetitive setups.
 
-## 🚀 Getting Started
+---
 
-### Prerequisites
-- A Linux server with `systemd`.
-- Go (version 1.18+ recommended).
-- Root or `sudo` privileges (required for service management and file storage in `/root`).
+## 2. Login Page
 
-### Installation
-1.  Build the binary from the `main.go` source file:
+This is the entry point to the application. Access is protected by a username and password.
+
+-   **Default Credentials**:
+    -   Username: `admin`
+    -   Password: `admin`
+-   **Functionality**: Users must enter their credentials to gain access to the dashboard. After updating credentials on the Settings page, the user will be redirected here to log in again.
+
+**Screenshot Placeholder:**
+![Login Page](/main/screenshots/login.png "The login screen for the FRP Management UI.")
+
+---
+
+## 3. Dashboard
+
+The Dashboard is the landing page after a successful login. It provides a high-level, real-time overview of your system and FRP connections.
+
+**Screenshot Placeholder:**
+![Dashboard View](wiki-images/dashboard.png "The main dashboard with all monitoring widgets.")
+
+### Widgets
+
+-   **System Information**: A top bar showing four key metrics about the host machine.
+    -   **CPU Usage**: The current CPU load percentage. The color changes from green (<50%), to yellow (50-80%), to red (>80%) based on usage.
+    -   **RAM Usage**: The amount of memory currently in use versus the total available memory. The color changes based on the percentage of RAM used (green <70%, yellow 70-90%, red >90%).
+    -   **Network Upload**: The current outbound network traffic speed.
+    -   **Network Download**: The current inbound network traffic speed.
+
+-   **Connection Overview**: This card provides a quick status check for all configured FRP clients and servers.
+    -   **Status Dots**: Each entry has a colored dot indicating its current status, determined by analyzing recent logs:
+        -   **Green**: Running correctly.
+        -   **Yellow**: Running, but with warnings in the logs.
+        -   **Red**: An error has occurred.
+        -   **Gray**: The service is stopped.
+
+-   **Network History**: A line graph that visualizes the network upload and download speeds (in KB/s) over the last 5 minutes, updating every 5 seconds.
+
+---
+
+## 4. Setup & Presets
+
+This section is the control center for creating new FRP configurations and managing templates (presets). It is organized into four tabs.
+
+**Screenshot Placeholder:**
+![Setup & Presets Page](wiki-images/setup-page.png "The main setup page with its four primary tabs.")
+
+### 4.1 Setup Client
+
+This tab is for creating a new `frpc` (client) configuration and its associated system service.
+
+-   **Load Preset**: Select a saved client preset to auto-fill the form fields.
+-   **Client Name**: A unique, descriptive name for the client (e.g., `my-game-server`). This name is used for the configuration file and the service.
+-   **Server IP / Port**: The address and port of the `frps` server this client will connect to.
+-   **Auth Token**: The authentication token that must match the server's token.
+-   **Transport**: The protocol to use for the connection (TCP, Websocket, QUIC, KCP).
+-   **Enable TCP Mux**: Choose whether to enable TCP stream multiplexing over a single connection.
+-   **Local Ports**: The local ports on the client machine to be exposed. You can specify single ports, commas, and ranges (e.g., `22, 80, 443, 6000-6010`).
+-   **Setup Client Button**: Submits the form, creates the `.toml` configuration file, and enables/starts the `frpc@<client-name>.service`.
+
+**Screenshot Placeholder:**
+![Setup Client Form](wiki-images/setup-client-form.png "The form for creating a new FRP client.")
+
+### 4.2 Setup Server
+
+This tab is for creating a new `frps` (server) configuration and its associated system service.
+
+-   **Load Preset**: Select a saved server preset to auto-fill the form.
+-   **Server Name**: A unique, descriptive name for the server (e.g., `public-vps-1`).
+-   **Bind Port**: The main port the FRP server will listen on for client connections.
+-   **Protocol**: Additional protocols to enable (QUIC, KCP).
+-   **Enable TCP Mux**: Choose whether to enable TCP stream multiplexing.
+-   **Auth Token**: The token clients must use to connect.
+-   **Setup Server Button**: Submits the form, creates the configuration file, and starts the `frps@<server-name>.service`.
+
+**Screenshot Placeholder:**
+![Setup Server Form](wiki-images/setup-server-form.png "The form for creating a new FRP server.")
+
+### 4.3 Manage Presets
+
+This tab allows you to create and delete reusable templates for both client and server setups to speed up configuration.
+
+-   **Client Presets / Server Presets Tabs**: Switch between managing presets for clients or servers.
+-   **Create New Preset Form**: Fill out the details for a new preset and click "Save". The preset will appear in the "Existing Presets" list and the "Load Preset" dropdown on the setup forms.
+-   **Existing Presets List**: Shows all saved presets. Each item has a **Delete** button.
+
+**Screenshot Placeholder:**
+![Manage Presets Tab](wiki-images/manage-presets.png "The interface for creating and deleting presets.")
+
+### 4.4 System Management
+
+This tab provides high-level actions for the FRP installation itself.
+
+-   **Install/Update FRP**: Downloads the latest version of FRP from GitHub, installs the binaries (`frps`, `frpc`), and sets up the necessary systemd service template files. Use this for a first-time install or to upgrade.
+-   **Uninstall FRP**: **(Warning: Irreversible)** This action stops all services, removes all configuration files, deletes the binaries, and removes the systemd files. It completely scrubs FRP from the system. A confirmation prompt will appear before proceeding.
+
+**Screenshot Placeholder:**
+![System Management Tab](wiki-images/system-management.png "System-level install and uninstall options.")
+
+---
+
+## 5. Manage FRP
+
+This page is for the day-to-day management of your running FRP services.
+
+**Screenshot Placeholder:**
+![Manage FRP Page](wiki-images/manage-frp.png "The primary management interface for clients and servers.")
+
+### 5.1 Clients Tab
+
+-   **Global Controls**: **Start All**, **Stop All**, and **Restart All** buttons perform the respective action on every configured client simultaneously.
+-   **Client Tabs**: Each configured client has its own tab for individual management.
+-   **Individual Controls**: Within each tab, you can **Start**, **Stop**, **Restart**, or **Edit Config** for that specific client.
+-   **Live Logs**: A real-time log viewer for the selected client service.
+    -   **Search Bar**: Instantly filter logs for specific keywords.
+    -   **Level Filters**: Filter logs by severity: **INFO**, **WARN**, or **ERROR**.
+
+**Screenshot Placeholder:**
+![Manage Clients View](wiki-images/manage-clients.png "Detailed view of the client management tab with live logs.")
+
+### 5.2 Servers Tab
+
+This tab mirrors the functionality of the Clients tab but is dedicated to `frps` server instances. It includes the same global controls, individual controls, and live log viewer.
+
+### 5.3 Editing a Configuration
+
+Clicking the **Edit Config** button on any client or server tab takes you to this page.
+
+-   **Config Name**: You can rename the configuration here. This will automatically stop the old service, rename the config file, and start a new service with the new name.
+-   **Config Content**: A text area containing the full `.toml` configuration file. You can make any manual edits here.
+-   **Save**: Saves the changes to the file and restarts the service to apply them.
+
+**Screenshot Placeholder:**
+![Edit Config Page](wiki-images/edit-config.png "The editor for manually changing a TOML configuration file.")
+
+---
+
+## 6. Manage EFRP
+
+This page provides a simplified management interface for the EFRP service.
+
+-   **Controls**: **Start** and **Stop** buttons to manage the EFRP service.
+-   **Live Logs**: A real-time log viewer for the EFRP service, complete with search and level filtering.
+
+**Screenshot Placeholder:**
+![Manage EFRP Page](wiki-images/manage-efrp.png "The management interface for the EFRP service.")
+
+---
+
+## 7. Show Status
+
+This page gives a raw, text-based summary of the entire FRP setup, which can be useful for quick debugging or copying information.
+
+-   **Version**: The currently installed FRP version.
+-   **Running Services**: A list of all `frpc` and `frps` services that are currently active.
+-   **Enabled Services**: A list of all `frpc` and `frps` services that are enabled to start on boot.
+-   **Server/Client Configs**: A directory listing of all `.toml` files in the server and client configuration folders.
+
+**Screenshot Placeholder:**
+![Show Status Page](wiki-images/show-status.png "The text-based status overview page.")
+
+---
+
+## 8. Settings
+
+This page allows you to manage the credentials for accessing the web UI.
+
+-   **Username**: Change the login username.
+-   **Current Password**: Must be provided to make any changes.
+-   **New Password / Confirm New Password**: Enter a new password here. Leave blank to keep the current one.
+-   **Save Changes**: After saving, you will be logged out and redirected to the login page to sign in with your new credentials.
+
+**Screenshot Placeholder:**
+![Settings Page](wiki-images/settings-page.png "The user settings and password change form.")
+
+---
+
+## 9. How to Add Images to this Wiki
+
+Follow these steps to add screenshots to this document in your GitHub repository.
+
+1.  **Create an Image Directory**: In the root of your project repository, create a new folder named `wiki-images`.
+2.  **Take Screenshots**: Capture images of each relevant page or feature described in this wiki.
+3.  **Name and Save Images**: Save the screenshots with descriptive, lowercase names (e.g., `login-page.png`, `dashboard.png`) inside the `wiki-images` folder.
+4.  **Commit and Push**: Use Git to add, commit, and push the new `wiki-images` folder and its contents to your repository.
     ```bash
-    go build -o frp-panel .
+    git add wiki-images/
+    git commit -m "docs: Add screenshots for wiki"
+    git push
     ```
-2.  Create a directory for the application's templates.
-    ```bash
-    mkdir templates
-    ```
-3.  Place all `.html` files into the `templates` directory.
-4.  Run the binary. The server will start on port `5001`.
-    ```bash
-    ./frp-panel
-    ```
-5.  Access the UI in your browser at `http://<your-server-ip>:5001`.
-6.  Log in with the default credentials:
-    - **Username:** `admin`
-    - **Password:** `admin`
+5.  **Update the Wiki**: Edit this `WIKI.md` file. The image links are already set up as placeholders. If your filenames match the placeholders, the images will appear automatically once they are pushed to the repository.
 
-### First-Time Setup
-After logging in for the first time:
-1.  Navigate to **Setup & Presets** from the sidebar.
-2.  Select the **System Management** tab.
-3.  Click the **Install/Update FRP** button. This will download the latest `frps` and `frpc` binaries from GitHub and set up the necessary `systemd` service files on your system.
+    The syntax for an image in Markdown is:
+    `![Alt Text](path/to/image.png "Optional Title")`
 
-## 📁 Configuration & Data Storage
-
-The application stores all its data and FRP configurations in the `/root/frp/` directory by default. Ensure this path is accessible and writable by the user running the application.
-
-- `/root/frp/client/`: Stores `frpc` client configurations (`.toml` files).
-- `/root/frp/server/`: Stores `frps` server configurations (`.toml` files).
-- `/root/frp/users.json`: Stores user credentials (passwords are hashed).
-- `/root/frp/presets.json`: Stores client configuration presets.
-- `/root/frp/server_presets.json`: Stores server configuration presets.
-
-## 📡 API Overview
-
-The backend provides a RESTful API for the frontend to consume.
-
-- `GET /api/system/info`: Provides real-time system metrics (CPU, RAM, Network).
-- `GET /api/system/history`: Returns historical network data for the dashboard chart.
-- `GET /api/connections/status`: Fetches the current status of all configured FRP services.
-- `GET /api/presets`, `POST /api/presets/save`, etc.: Full CRUD operations for managing client and server presets.
-- `GET /ws/logs/:type/:name`: The WebSocket endpoint for live log streaming.
-
-## 📄 License
-
-This project is licensed under the MIT License.
+    For example:
+    `![Login Page](wiki-images/login-page.png "The login screen for the FRP Management UI.")`
