@@ -967,7 +967,7 @@ func setupServer(c *gin.Context) {
 	useMux := c.PostForm("use_mux") == "true"
 	token := c.PostForm("token")
 	if token == "" {
-		token = "mikeesierrah"
+		token = "t.me/Orion_Group_support"
 	}
 
 	configPath := filepath.Join(ServerConfigDir, fmt.Sprintf("%s.toml", sanitizedName))
