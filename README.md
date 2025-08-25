@@ -1,199 +1,193 @@
 <img width="1918" height="904" alt="image" src="https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/dash.png?raw=true" />
-# FRP Management UI Wiki
+# رابط کاربری مدیریت FRP
 
-Welcome to the official wiki for the FRP Management UI. This document provides a comprehensive guide to all the features and functionalities of the application.
+به ویکی رسمی رابط کاربری مدیریت FRP خوش آمدید. این سند راهنمای جامعی برای تمام ویژگی‌ها و عملکردهای این برنامه ارائه می‌دهد.
 
-## Table of Contents
-1.  [Overview](#1-overview)
-2.  [Login Page](#2-login-page)
-3.  [Dashboard](#3-dashboard)
-4.  [Setup & Presets](#4-setup--presets)
-    - [4.1 Setup Client](#41-setup-client)
-    - [4.2 Setup Server](#42-setup-server)
-    - [4.3 Manage Presets](#43-manage-presets)
-    - [4.4 System Management](#44-system-management)
-5.  [Manage FRP](#5-manage-frp)
-    - [5.1 Clients Tab](#51-clients-tab)
-    - [5.2 Servers Tab](#52-servers-tab)
-    - [5.3 Editing a Configuration](#53-editing-a-configuration)
-6.  [Manage EFRP](#6-manage-efrp)
-7.  [Show Status](#7-show-status)
-8.  [Settings](#8-settings)
-9.  [How to Add Images to this Wiki](#9-how-to-add-images-to-this-wiki)
-
----
-
-## 1. Overview
-
-The FRP Management UI is a web-based graphical interface designed to simplify the installation, configuration, and management of FRP (Fast Reverse Proxy) clients and servers. It provides real-time system monitoring, live log streaming, and an intuitive preset system to streamline repetitive setups.
+## فهرست مطالب
+1.  [بررسی کلی](#1-بررسی-کلی)
+2.  [صفحه ورود](#2-صفحه-ورود)
+3.  [داشبورد](#3-داشبورد)
+4.  [تنظیمات و الگوها](#4-تنظیمات-و-الگوها)
+    - [4.1 تنظیم کلاینت](#41-تنظیم-کلاینت)
+    - [4.2 تنظیم سرور](#42-تنظیم-سرور)
+    - [4.3 مدیریت الگوها](#43-مدیریت-الگوها)
+    - [4.4 مدیریت سیستم](#44-مدیریت-سیستم)
+5.  [مدیریت FRP](#5-مدیریت-frp)
+    - [5.1 تب کلاینت‌ها](#51-تب-کلاینت‌ها)
+    - [5.2 تب سرورها](#52-تب-سرورها)
+    - [5.3 ویرایش پیکربندی](#53-ویرایش-پیکربندی)
+6.  [مدیریت EFRP](#6-مدیریت-efrp)
+7.  [نمایش وضعیت](#7-نمایش-وضعیت)
+8.  [تنظیمات](#8-تنظیمات)
+9.  [چگونه تصاویر را به این ویکی اضافه کنیم](#9-چگونه-تصاویر-را-به-این-ویکی-اضافه-کنیم)
 
 ---
 
-## 2. Login Page
+## 1. بررسی کلی
 
-This is the entry point to the application. Access is protected by a username and password.
-
--   **Default Credentials**:
-    -   Username: `admin`
-    -   Password: `admin`
--   **Functionality**: Users must enter their credentials to gain access to the dashboard. After updating credentials on the Settings page, the user will be redirected here to log in again.
-
-
-![Login Page](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/login.png?raw=true "The login screen for the FRP Management UI.")
+رابط کاربری مدیریت FRP یک رابط گرافیکی مبتنی بر وب است که برای ساده‌سازی نصب، پیکربندی و مدیریت کلاینت‌ها و سرورهای FRP (پروکسی معکوس سریع) طراحی شده است. این برنامه نظارت بر سیستم در زمان واقعی، پخش زنده گزارش‌ها و یک سیستم الگوی بصری را برای ساده‌سازی تنظیمات تکراری ارائه می‌دهد.
 
 ---
 
-## 3. Dashboard
+## 2. صفحه ورود
 
-The Dashboard is the landing page after a successful login. It provides a high-level, real-time overview of your system and FRP connections.
+این صفحه نقطه ورود به برنامه است. دسترسی با نام کاربری و رمز عبور محافظت می‌شود.
+
+-   **اطلاعات پیش‌فرض**:
+    -   نام کاربری: `admin`
+    -   رمز عبور: `admin`
+-   **عملکرد**: کاربران باید اطلاعات ورود خود را وارد کنند تا به داشبورد دسترسی پیدا کنند. پس از به‌روزرسانی اطلاعات در صفحه تنظیمات، کاربر به این صفحه هدایت می‌شود تا دوباره وارد شود.
 
 
-![Dashboard View](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/dash.png?raw=true "The main dashboard with all monitoring widgets.")
-
-### Widgets
-
--   **System Information**: A top bar showing four key metrics about the host machine.
-    -   **CPU Usage**: The current CPU load percentage. The color changes from green (<50%), to yellow (50-80%), to red (>80%) based on usage.
-    -   **RAM Usage**: The amount of memory currently in use versus the total available memory. The color changes based on the percentage of RAM used (green <70%, yellow 70-90%, red >90%).
-    -   **Network Upload**: The current outbound network traffic speed.
-    -   **Network Download**: The current inbound network traffic speed.
-
--   **Connection Overview**: This card provides a quick status check for all configured FRP clients and servers.
-    -   **Status Dots**: Each entry has a colored dot indicating its current status, determined by analyzing recent logs:
-        -   **Green**: Running correctly.
-        -   **Yellow**: Running, but with warnings in the logs.
-        -   **Red**: An error has occurred.
-        -   **Gray**: The service is stopped.
-
--   **Network History**: A line graph that visualizes the network upload and download speeds (in KB/s) over the last 5 minutes, updating every 5 seconds.
+![صفحه ورود](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/login.png?raw=true "صفحه ورود برای رابط کاربری مدیریت FRP.")
 
 ---
 
-## 4. Setup & Presets
+## 3. داشبورد
 
-This section is the control center for creating new FRP configurations and managing templates (presets). It is organized into four tabs.
-
-
-![Setup & Presets Page](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/setup.png?raw=true "The main setup page with its four primary tabs.")
-
-### 4.1 Setup Client
-
-This tab is for creating a new `frpc` (client) configuration and its associated system service.
-
--   **Load Preset**: Select a saved client preset to auto-fill the form fields.
--   **Client Name**: A unique, descriptive name for the client (e.g., `my-game-server`). This name is used for the configuration file and the service.
--   **Server IP / Port**: The address and port of the `frps` server this client will connect to.
--   **Auth Token**: The authentication token that must match the server's token.
--   **Transport**: The protocol to use for the connection (TCP, Websocket, QUIC, KCP).
--   **Enable TCP Mux**: Choose whether to enable TCP stream multiplexing over a single connection.
--   **Local Ports**: The local ports on the client machine to be exposed. You can specify single ports, commas, and ranges (e.g., `22, 80, 443, 6000-6010`).
--   **Setup Client Button**: Submits the form, creates the `.toml` configuration file, and enables/starts the `frpc@<client-name>.service`.
+داشبورد صفحه اصلی پس از ورود موفقیت‌آمیز است. این صفحه یک نمای کلی در زمان واقعی و سطح بالا از سیستم و اتصالات FRP ارائه می‌دهد.
 
 
-### 4.2 Setup Server
+![نمای داشبورد](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/dash.png?raw=true "داشبورد اصلی با تمام ابزارک‌های نظارتی.")
 
-This tab is for creating a new `frps` (server) configuration and its associated system service.
+### ابزارک‌ها
 
--   **Load Preset**: Select a saved server preset to auto-fill the form.
--   **Server Name**: A unique, descriptive name for the server (e.g., `public-vps-1`).
--   **Bind Port**: The main port the FRP server will listen on for client connections.
--   **Protocol**: Additional protocols to enable (QUIC, KCP).
--   **Enable TCP Mux**: Choose whether to enable TCP stream multiplexing.
--   **Auth Token**: The token clients must use to connect.
--   **Setup Server Button**: Submits the form, creates the configuration file, and starts the `frps@<server-name>.service`.
+-   **اطلاعات سیستم**: یک نوار بالایی که چهار معیار کلیدی درباره دستگاه میزبان را نشان می‌دهد.
+    -   **استفاده از CPU**: درصد بار فعلی CPU. رنگ از سبز (<50%)، به زرد (50-80%) و قرمز (>80%) بر اساس میزان استفاده تغییر می‌کند.
+    -   **استفاده از RAM**: مقدار حافظه در حال استفاده در مقابل کل حافظه موجود. رنگ بر اساس درصد استفاده از RAM تغییر می‌کند (سبز <70%، زرد 70-90%، قرمز >90%).
+    -   **آپلود شبکه**: سرعت فعلی ترافیک شبکه خروجی.
+    -   **دانلود شبکه**: سرعت فعلی ترافیک شبکه ورودی.
+
+-   **نمای کلی اتصال**: این کارت یک بررسی سریع از وضعیت تمام کلاینت‌ها و سرورهای FRP پیکربندی‌شده ارائه می‌دهد.
+    -   **نقاط وضعیت**: هر ورودی دارای یک نقطه رنگی است که وضعیت فعلی آن را نشان می‌دهد، که با تحلیل گزارش‌های اخیر تعیین می‌شود:
+        -   **سبز**: به درستی در حال اجرا.
+        -   **زرد**: در حال اجرا، اما با هشدارهایی در گزارش‌ها.
+        -   **قرمز**: خطایی رخ داده است.
+        -   **خاکستری**: سرویس متوقف شده است.
+
+-   **تاریخچه شبکه**: یک نمودار خطی که سرعت آپلود و دانلود شبکه (به کیلوبایت بر ثانیه) را در 5 دقیقه گذشته نمایش می‌دهد و هر 5 ثانیه به‌روزرسانی می‌شود.
+
+---
+
+## 4. تنظیمات و الگوها
+
+این بخش مرکز کنترل برای ایجاد پیکربندی‌های جدید FRP و مدیریت الگوها (presets) است. این بخش به چهار تب سازمان‌دهی شده است.
 
 
-### 4.3 Manage Presets
+![صفحه تنظیمات و الگوها](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/setup.png?raw=true "صفحه اصلی تنظیمات با چهار تب اصلی.")
 
-This tab allows you to create and delete reusable templates for both client and server setups to speed up configuration.
+### 4.1 تنظیم کلاینت
 
--   **Client Presets / Server Presets Tabs**: Switch between managing presets for clients or servers.
--   **Create New Preset Form**: Fill out the details for a new preset and click "Save". The preset will appear in the "Existing Presets" list and the "Load Preset" dropdown on the setup forms.
--   **Existing Presets List**: Shows all saved presets. Each item has a **Delete** button.
+این تب برای ایجاد یک پیکربندی جدید `frpc` (کلاینت) و سرویس سیستمی مرتبط با آن است.
+
+-   **بارگذاری الگو**: یک الگوی کلاینت ذخیره‌شده را انتخاب کنید تا فیلدهای فرم به طور خودکار پر شوند.
+-   **نام کلاینت**: یک نام منحصربه‌فرد و توصیفی برای کلاینت (مثلاً `my-game-server`). این نام برای فایل پیکربندی و سرویس استفاده می‌شود.
+-   **آی‌پی / پورت سرور**: آدرس و پورت سرور `frps` که این کلاینت به آن متصل خواهد شد.
+-   **توکن احراز هویت**: توکن احراز هویتی که باید با توکن سرور مطابقت داشته باشد.
+-   **حمل‌ونقل**: پروتکل مورد استفاده برای اتصال (TCP، Websocket، QUIC، KCP).
+-   **فعال‌سازی TCP Mux**: انتخاب کنید که آیا مالتی‌پلکسینگ جریان TCP روی یک اتصال واحد فعال شود یا خیر.
+-   **پورت‌های محلی**: پورت‌های محلی روی دستگاه کلاینت که باید در معرض دید قرار گیرند. می‌توانید پورت‌های تکی، کاما و محدوده‌ها را مشخص کنید (مثلاً `22, 80, 443, 6000-6010`).
+-   **دکمه تنظیم کلاینت**: فرم را ارسال می‌کند، فایل پیکربندی `.toml` را ایجاد می‌کند و سرویس `frpc@<client-name>.service` را فعال و شروع می‌کند.
 
 
+### 4.2 تنظیم سرور
+
+این تب برای ایجاد یک پیکربندی جدید `frps` (سرور) و سرویس سیستمی مرتبط با آن است.
+
+-   **بارگذاری الگو**: یک الگوی سرور ذخیره‌شده را انتخاب کنید تا فرم به طور خودکار پر شود.
+-   **نام سرور**: یک نام منحصربه‌فرد و توصیفی برای سرور (مثلاً `public-vps-1`).
+-   **پورت اتصال**: پورت اصلی که سرور FRP برای اتصال کلاینت‌ها روی آن گوش می‌دهد.
+-   **پروتکل**: پروتکل‌های اضافی برای فعال‌سازی (QUIC، KCP).
+-   **فعال‌سازی TCP Mux**: انتخاب کنید که آیا مالتی‌پلکسینگ جریان TCP فعال شود یا خیر.
+-   **توکن احراز هویت**: توکنی که کلاینت‌ها باید برای اتصال استفاده کنند.
+-   **دکمه تنظیم سرور**: فرم را ارسال می‌کند، فایل پیکربندی را ایجاد می‌کند و سرویس `frps@<server-name>.service` را شروع می‌کند.
 
 
-### 4.4 System Management
+### 4.3 مدیریت الگوها
 
-This tab provides high-level actions for the FRP installation itself.
+این تب به شما امکان می‌دهد تا الگوهای قابل استفاده مجدد برای تنظیمات کلاینت و سرور ایجاد و حذف کنید تا پیکربندی سریع‌تر انجام شود.
 
--   **Install/Update FRP**: Downloads the latest version of FRP from GitHub, installs the binaries (`frps`, `frpc`), and sets up the necessary systemd service template files. Use this for a first-time install or to upgrade.
--   **Uninstall FRP**: **(Warning: Irreversible)** This action stops all services, removes all configuration files, deletes the binaries, and removes the systemd files. It completely scrubs FRP from the system. A confirmation prompt will appear before proceeding.
+-   **تب‌های الگوهای کلاینت / سرور**: بین مدیریت الگوهای کلاینت یا سرور جابجا شوید.
+-   **فرم ایجاد الگوی جدید**: جزئیات یک الگوی جدید را پر کنید و روی "ذخیره" کلیک کنید. الگو در لیست "الگوهای موجود" و منوی کشویی "بارگذاری الگو" در فرم‌های تنظیم ظاهر خواهد شد.
+-   **لیست الگوهای موجود**: تمام الگوهای ذخیره‌شده را نشان می‌دهد. هر مورد دارای یک دکمه **حذف** است.
 
+
+### 4.4 مدیریت سیستم
+
+این تب اقدامات سطح بالایی را برای نصب خود FRP ارائه می‌دهد.
+
+-   **نصب/به‌روزرسانی FRP**: آخرین نسخه FRP را از GitHub دانلود می‌کند، فایل‌های باینری (`frps`، `frpc`) را نصب می‌کند و فایل‌های قالب سرویس systemd مورد نیاز را تنظیم می‌کند. از این برای نصب اولیه یا ارتقا استفاده کنید.
+-   **حذف FRP**: **(هشدار: غیرقابل بازگشت)** این اقدام تمام سرویس‌ها را متوقف می‌کند، تمام فایل‌های پیکربندی را حذف می‌کند، فایل‌های باینری را حذف می‌کند و فایل‌های systemd را حذف می‌کند. این کار FRP را به طور کامل از سیستم پاک می‌کند. قبل از ادامه، یک اعلان تأیید ظاهر خواهد شد.
 
 
 ---
 
-## 5. Manage FRP
+## 5. مدیریت FRP
 
-This page is for the day-to-day management of your running FRP services.
-
-
-![Manage FRP Page](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/manage.png?raw=true "The primary management interface for clients and servers.")
-
-### 5.1 Clients Tab
-
--   **Global Controls**: **Start All**, **Stop All**, and **Restart All** buttons perform the respective action on every configured client simultaneously.
--   **Client Tabs**: Each configured client has its own tab for individual management.
--   **Individual Controls**: Within each tab, you can **Start**, **Stop**, **Restart**, or **Edit Config** for that specific client.
--   **Live Logs**: A real-time log viewer for the selected client service.
-    -   **Search Bar**: Instantly filter logs for specific keywords.
-    -   **Level Filters**: Filter logs by severity: **INFO**, **WARN**, or **ERROR**.
+این صفحه برای مدیریت روزمره سرویس‌های در حال اجرای FRP است.
 
 
+![صفحه مدیریت FRP](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/manage.png?raw=true "رابط اصلی مدیریت برای کلاینت‌ها و سرورها.")
 
-### 5.2 Servers Tab
+### 5.1 تب کلاینت‌ها
 
-This tab mirrors the functionality of the Clients tab but is dedicated to `frps` server instances. It includes the same global controls, individual controls, and live log viewer.
+-   **کنترل‌های جهانی**: دکمه‌های **شروع همه**، **توقف همه** و **راه‌اندازی مجدد همه** اقدام مربوطه را به طور همزمان روی تمام کلاینت‌های پیکربندی‌شده انجام می‌دهند.
+-   **تب‌های کلاینت**: هر کلاینت پیکربندی‌شده تب خاص خود را برای مدیریت جداگانه دارد.
+-   **کنترل‌های جداگانه**: در هر تب، می‌توانید برای کلاینت خاص **شروع**، **توقف**، **راه‌اندازی مجدد** یا **ویرایش پیکربندی** را انجام دهید.
+-   **گزارش‌های زنده**: یک نمایشگر گزارش در زمان واقعی برای سرویس کلاینت انتخاب‌شده.
+    -   **نوار جستجو**: فوراً گزارش‌ها را برای کلمات کلیدی خاص فیلتر کنید.
+    -   **فیلترهای سطح**: گزارش‌ها را بر اساس شدت فیلتر کنید: **اطلاعات**، **هشدار** یا **خطا**.
 
-### 5.3 Editing a Configuration
 
-Clicking the **Edit Config** button on any client or server tab takes you to this page.
+### 5.2 تب سرورها
 
--   **Config Name**: You can rename the configuration here. This will automatically stop the old service, rename the config file, and start a new service with the new name.
--   **Config Content**: A text area containing the full `.toml` configuration file. You can make any manual edits here.
--   **Save**: Saves the changes to the file and restarts the service to apply them.
+این تب عملکرد تب کلاینت‌ها را منعکس می‌کند اما به نمونه‌های سرور `frps` اختصاص دارد. شامل همان کنترل‌های جهانی، کنترل‌های جداگانه و نمایشگر گزارش زنده است.
 
+### 5.3 ویرایش پیکربندی
+
+کلیک روی دکمه **ویرایش پیکربندی** در هر تب کلاینت یا سرور شما را به این صفحه می‌برد.
+
+-   **نام پیکربندی**: می‌توانید نام پیکربندی را در اینجا تغییر دهید. این کار به طور خودکار سرویس قدیمی را متوقف می‌کند، فایل پیکربندی را تغییر نام می‌دهد و سرویس جدیدی با نام جدید شروع می‌کند.
+-   **محتوای پیکربندی**: یک ناحیه متنی که شامل کل فایل پیکربندی `.toml` است. می‌توانید در اینجا ویرایش‌های دستی انجام دهید.
+-   **ذخیره**: تغییرات را در فایل ذخیره می‌کند و سرویس را برای اعمال آنها راه‌اندازی مجدد می‌کند.
 
 
 ---
 
-## 6. Manage EFRP
+## 6. مدیریت EFRP
 
-This page provides a simplified management interface for the EFRP service.
+این صفحه یک رابط مدیریت ساده‌شده برای سرویس EFRP ارائه می‌دهد.
 
--   **Controls**: **Start** and **Stop** buttons to manage the EFRP service.
--   **Live Logs**: A real-time log viewer for the EFRP service, complete with search and level filtering.
-
-
-![Manage EFRP Page](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/EFRP.png?raw=true "The management interface for the EFRP service.")
-
----
-
-## 7. Show Status
-
-This page gives a raw, text-based summary of the entire FRP setup, which can be useful for quick debugging or copying information.
-
--   **Version**: The currently installed FRP version.
--   **Running Services**: A list of all `frpc` and `frps` services that are currently active.
--   **Enabled Services**: A list of all `frpc` and `frps` services that are enabled to start on boot.
--   **Server/Client Configs**: A directory listing of all `.toml` files in the server and client configuration folders.
+-   **کنترل‌ها**: دکمه‌های **شروع** و **توقف** برای مدیریت سرویس EFRP.
+-   **گزارش‌های زنده**: یک نمایشگر گزارش در زمان واقعی برای سرویس EFRP، کامل با جستجو و فیلتر سطح.
 
 
-![Show Status Page](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/status.png?raw=true "The text-based status overview page.")
+![صفحه مدیریت EFRP](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/EFRP.png?raw=true "رابط مدیریت برای سرویس EFRP.")
 
 ---
 
-## 8. Settings
+## 7. نمایش وضعیت
 
-This page allows you to manage the credentials for accessing the web UI.
+این صفحه یک خلاصه متنی خام از کل تنظیمات FRP ارائه می‌دهد که برای اشکال‌زدایی سریع یا کپی اطلاعات مفید است.
 
--   **Username**: Change the login username.
--   **Current Password**: Must be provided to make any changes.
--   **New Password / Confirm New Password**: Enter a new password here. Leave blank to keep the current one.
--   **Save Changes**: After saving, you will be logged out and redirected to the login page to sign in with your new credentials.
+-   **نسخه**: نسخه FRP نصب‌شده فعلی.
+-   **سرویس‌های در حال اجرا**: لیستی از تمام سرویس‌های `frpc` و `frps` که در حال حاضر فعال هستند.
+-   **سرویس‌های فعال‌شده**: لیستی از تمام سرویس‌های `frpc` و `frps` که برای شروع در بوت فعال شده‌اند.
+-   **پیکربندی‌های سرور/کلاینت**: فهرستی از تمام فایل‌های `.toml` در پوشه‌های پیکربندی سرور و کلاینت.
 
-**Screenshot Placeholder:**
-![Settings Page](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/settings.png?raw=true "The user settings and password change form.")
 
+![صفحه نمایش وضعیت](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/status.png?raw=true "صفحه نمای کلی وضعیت مبتنی بر متن.")
+
+---
+
+## 8. تنظیمات
+
+این صفحه به شما امکان می‌دهد اطلاعات ورود برای دسترسی به رابط وب را مدیریت کنید.
+
+-   **نام کاربری**: تغییر نام کاربری ورود.
+-   **رمز عبور فعلی**: برای انجام هرگونه تغییر باید ارائه شود.
+-   **رمز عبور جدید / تأیید رمز عبور جدید**: رمز عبور جدید را در اینجا وارد کنید. برای حفظ رمز فعلی خالی بگذارید.
+-   **ذخیره تغییرات**: پس از ذخیره، شما از سیستم خارج شده و به صفحه ورود هدایت می‌شوید تا با اطلاعات جدید وارد شوید.
+
+**جایگاه اسکرین‌شات:**
+![صفحه تنظیمات](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/settings.png?raw=true "فرم تنظیمات کاربر و تغییر رمز عبور.")
