@@ -6,7 +6,7 @@ Welcome to the official wiki for the FRP Management UI. This document provides a
 # One-liner Installation
 Run the following command as root to install FRP Web UI, set up the systemd service, and start it:
 ```bash
-wget -qO- https://raw.githubusercontent.com/md9786/FRP-Management-Webui/main/install_frp_ui.sh | bash
+wget -qO- https://raw.githubusercontent.com/md9786/FRP-Management-Webui/main/install.sh | bash
 ```
 Access the Web UI at http://<server-ip>:5001 after installation.
 
