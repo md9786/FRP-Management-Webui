@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FRP Management Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(180deg, #0f172a 0%, #0b0f1a 50%, #1e1b2e 100%);
+    color: #f1f5f9;
+  }
+  .system-info, .frp-status {
+    background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+  }
+  .card {
+    background: linear-gradient(135deg, #1e293b 0%, #111827 100%);
+  }
+  .metric-value {
+    transition: color 0.3s ease;
+  }
+  .metric-high { color: #ef4444; }
+  .metric-medium { color: #f59e0b; }
+  .metric-low { color: #22c55e; }
+  .content-wrapper { position: relative; z-index: 2; }
+  .floating-icons { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 1; }
+  .floating-icon { position: absolute; opacity: 0.05; font-size: 6rem; animation: float 6s ease-in-out infinite; color: #6366f1; }
+  .floating-icon:nth-child(1) { top: 40%; left: 80%; animation-delay: 0s; }
+  .floating-icon:nth-child(2) { top: 60%; left: 67%; animation-delay: 1s; }
+  .floating-icon:nth-child(3) { top: 40%; left: 54%; animation-delay: 2s; }
+  .floating-icon:nth-child(4) { top: 60%; left: 41%; animation-delay: 3s; }
+  .floating-icon:nth-child(5) { top: 40%; left: 28%; animation-delay: 4s; }
+  .floating-icon:nth-child(6) { top: 80%; left: 54%; animation-delay: 5s; }
+  @keyframes float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
+  .network-chart-container {
+    max-width: 600px;
+    height: 300px;
+  }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .status-dot-green { background-color: #22c55e; }
+  .status-dot-orange { background-color: #f59e0b; }
+  .status-dot-red { background-color: #ef4444; }
+  .status-dot-gray { background-color: #6b7280; }
+</style>
+</head>
+<body class="text-gray-100 min-h-screen">
+  <div class="floating-icons" id="floating-icons-container"></div>
+
+  <div class="content-wrapper">
+    <div class="flex">
+      {{template "sidebar.html" .}}
+      <main class="flex-1 p-8">
+        <div class="max-w-6xl mx-auto">
+          
+          <!-- System Info Section -->
+          <section class="system-info rounded-xl p-6 mb-8 shadow-lg">
+            <h2 class="text-xl font-semibold text-gray-100 text-center">System Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+              <div class="card rounded-lg p-4"><h3 class="text-sm font-medium text-gray-400 text-center">CPU Usage</h3><p class="text-2xl font-bold metric-value text-center" id="cpu-usage">--%</p></div>
+              <div class="card rounded-lg p-4"><h3 class="text-sm font-medium text-gray-400 text-center">RAM Usage</h3><p class="text-2xl font-bold metric-value text-center" id="ram-usage">-- / --</p></div>
+              <div class="card rounded-lg p-4"><h3 class="text-sm font-medium text-gray-400 text-center">Network Upload</h3><p class="text-2xl font-bold text-purple-300 text-center" id="network-upload">--</p></div>
+              <div class="card rounded-lg p-4"><h3 class="text-sm font-medium text-gray-400 text-center">Network Download</h3><p class="text-2xl font-bold text-purple-300 text-center" id="network-download">--</p></div>
+            </div>
+          </section>
+          
+          <!-- FRP Status, Overview & Network History -->
+          <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column -->
+            <div class="lg:col-span-1 space-y-8">
+              <!-- Connection Overview -->
+              <div class="card rounded-xl p-6 shadow-lg" id="connection-overview-container">
+                <h2 class="text-xl font-semibold text-gray-100 mb-4">Connection Overview</h2>
+                <div>
+                  <h3 class="text-base font-medium text-gray-300 mb-2">Servers</h3>
+                  <ul id="server-status-list" class="space-y-2">
+                    <li class="text-gray-500 text-sm">Loading...</li>
+                  </ul>
+                </div>
+                <div class="mt-4">
+                  <h3 class="text-base font-medium text-gray-300 mb-2">Clients</h3>
+                  <ul id="client-status-list" class="space-y-2">
+                    <li class="text-gray-500 text-sm">Loading...</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column (Network History) -->
+            <div class="lg:col-span-2 card network-chart-container rounded-xl p-6 shadow-lg">
+              <h2 class="text-xl font-semibold text-gray-100 mb-4">Network History (Last 5 Mins)</h2>
+              <canvas id="network-chart"></canvas>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+<script>
+  function formatBytes(bytes, perSecond = false) {
+    if (bytes < 0) bytes = 0;
+    if (bytes === 0) return '0 B' + (perSecond ? '/s' : '');
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    const value = parseFloat((bytes / Math.pow(k, i)).toFixed(1));
+    return `${value} ${sizes[i]}${perSecond ? '/s' : ''}`;
+  }
+
+  function updateMetricColor(element, value, thresholds) {
+    element.classList.remove('metric-low', 'metric-medium', 'metric-high');
+    if (value >= thresholds.high) element.classList.add('metric-high');
+    else if (value >= thresholds.medium) element.classList.add('metric-medium');
+    else element.classList.add('metric-low');
+  }
+
+  async function updateSystemInfo() {
+    try {
+      const response = await fetch('/api/system/info');
+      if (!response.ok) return;
+      const data = await response.json();
+
+      const cpuEl = document.getElementById('cpu-usage');
+      cpuEl.textContent = `${data.cpu_usage.toFixed(1)}%`;
+      updateMetricColor(cpuEl, data.cpu_usage, { medium: 50, high: 80 });
+
+      const ramEl = document.getElementById('ram-usage');
+      const ramPercent = (data.ram_used / data.ram_total) * 100;
+      ramEl.textContent = `${formatBytes(data.ram_used)} / ${formatBytes(data.ram_total)}`;
+      updateMetricColor(ramEl, ramPercent, { medium: 70, high: 90 });
+      
+      document.getElementById('network-upload').textContent = formatBytes(data.network_upload, true);
+      document.getElementById('network-download').textContent = formatBytes(data.network_download, true);
+    } catch (error) {
+      console.error('Error fetching system info:', error);
+    }
+  }
+
+  async function updateFRPStatus() {
+    try {
+      const response = await fetch('/api/frp/status');
+      if (!response.ok) return;
+      const data = await response.json();
+      document.getElementById('frp-clients').textContent = data.total_clients;
+      document.getElementById('frp-proxies').textContent = data.total_proxies;
+    } catch (error) {
+      console.error('Error fetching FRP status:', error);
+    }
+  }
+
+  async function updateConnectionOverview() {
+    const serverListEl = document.getElementById('server-status-list');
+    const clientListEl = document.getElementById('client-status-list');
+    const overviewContainer = document.getElementById('connection-overview-container');
+    
+    const statusMap = {
+        running: { color: 'green', text: 'Running' },
+        warning: { color: 'orange', text: 'Warning' },
+        error:   { color: 'red', text: 'Error' },
+        stopped: { color: 'gray', text: 'Stopped' }
+    };
+
+    try {
+        const response = await fetch('/api/connections/status');
+        if (!response.ok) {
+             overviewContainer.innerHTML = '<p class="text-gray-400 text-sm">Could not load connection status.</p>';
+             return;
+        }
+        const data = await response.json();
+
+        serverListEl.innerHTML = '';
+        clientListEl.innerHTML = '';
+
+        if (data.servers && data.servers.length > 0) {
+            data.servers.forEach(server => {
+                const statusInfo = statusMap[server.status] || statusMap['stopped'];
+                const li = document.createElement('li');
+                li.className = 'flex items-center justify-between text-sm py-1';
+                li.innerHTML = `
+                    <span class="text-gray-300 truncate pr-2">${server.name}</span>
+                    <div class="flex items-center flex-shrink-0">
+                        <span class="status-dot status-dot-${statusInfo.color} mr-2"></span>
+                        <span class="capitalize text-gray-400">${statusInfo.text}</span>
+                    </div>
+                `;
+                serverListEl.appendChild(li);
+            });
+        } else {
+            serverListEl.innerHTML = '<li class="text-gray-500 text-sm">No servers configured.</li>';
+        }
+
+        if (data.clients && data.clients.length > 0) {
+            data.clients.forEach(client => {
+                const statusInfo = statusMap[client.status] || statusMap['stopped'];
+                const li = document.createElement('li');
+                li.className = 'flex items-center justify-between text-sm py-1';
+                li.innerHTML = `
+                    <span class="text-gray-300 truncate pr-2">${client.name}</span>
+                    <div class="flex items-center flex-shrink-0">
+                        <span class="status-dot status-dot-${statusInfo.color} mr-2"></span>
+                        <span class="capitalize text-gray-400">${statusInfo.text}</span>
+                    </div>
+                `;
+                clientListEl.appendChild(li);
+            });
+        } else {
+            clientListEl.innerHTML = '<li class="text-gray-500 text-sm">No clients configured.</li>';
+        }
+    } catch (error) {
+        console.error('Error fetching connection overview:', error);
+        // Avoid overwriting the entire card on error, just the lists
+        serverListEl.innerHTML = '<li class="text-red-400 text-sm">Error loading status.</li>';
+        clientListEl.innerHTML = '<li class="text-red-400 text-sm">Error loading status.</li>';
+    }
+}
+
+  let networkChart;
+  async function updateNetworkChart() {
+    try {
+      const response = await fetch('/api/system/history');
+      if (!response.ok) return;
+      const history = await response.json() || [];
+
+      const labels = history.map(p => new Date(p.timestamp).toLocaleTimeString());
+      const uploadData = history.map(p => p.network_upload / 1024); // KB/s
+      const downloadData = history.map(p => p.network_download / 1024); // KB/s
+
+      if (!networkChart) {
+        const ctx = document.getElementById('network-chart').getContext('2d');
+        networkChart = new Chart(ctx, {
+          type: 'line',
+          data: { labels, datasets: [
+            { label: 'Upload (KB/s)', data: uploadData, borderColor: 'rgba(192, 132, 252, 1)', backgroundColor: 'rgba(192, 132, 252, 0.2)', fill: true, tension: 0.4 },
+            { label: 'Download (KB/s)', data: downloadData, borderColor: 'rgba(74, 222, 128, 1)', backgroundColor: 'rgba(74, 222, 128, 0.2)', fill: true, tension: 0.4 }
+          ]},
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+              x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+            },
+            plugins: { legend: { labels: { color: '#e2e8f0' } } }
+          }
+        });
+      } else {
+        networkChart.data.labels = labels;
+        networkChart.data.datasets[0].data = uploadData;
+        networkChart.data.datasets[1].data = downloadData;
+        networkChart.update();
+      }
+    } catch (error) {
+      console.error('Error fetching network history:', error);
+    }
+  }
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    updateSystemInfo();
+    updateFRPStatus();
+    updateNetworkChart();
+    updateConnectionOverview();
+    setInterval(updateSystemInfo, 2000);
+    setInterval(updateFRPStatus, 5000);
+    setInterval(updateNetworkChart, 5000);
+    setInterval(updateConnectionOverview, 5000);
+  });
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('floating-icons-container');
+    if (container) {
+      const techEmojis = ['💻', '🖥️', '💾', '💿', '🔌', '📡', '🛰️', '🚀', '⚙️', '🔧', '🔬', '💡', '📈', '📊', '🔗', '🌐', '☁️', '⚡️', '🤖', '👾', '📱', '⌨️', '🖱️', '🔋', '🧠'];
+      const iconCount = 6; // As per the CSS
+      let iconsHtml = '';
+      for (let i = 0; i < iconCount; i++) {
+        const randomEmoji = techEmojis[Math.floor(Math.random() * techEmojis.length)];
+        iconsHtml += `<div class="floating-icon">${randomEmoji}</div>`;
+      }
+      container.innerHTML = iconsHtml;
+    }
+  });
+</script>
+</body>
+</html>

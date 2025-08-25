@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage FRP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(180deg, #0f172a 0%, #0b0f1a 50%, #1e1b2e 100%);
+    color: #f1f5f9;
+  }
+  .card { background: linear-gradient(135deg, #1e293b 0%, #111827 100%); }
+  .btn-primary { background: linear-gradient(90deg, #4338ca 0%, #312e81 100%); transition: background 0.2s ease, transform 0.2s ease; }
+  .btn-primary:hover { background: linear-gradient(90deg, #4f46e5 0%, #3730a3 100%); transform: translateY(-2px); }
+  .btn-success { background: linear-gradient(90deg, #16a34a 0%, #15803d 100%); transition: background 0.2s ease, transform 0.2s ease; }
+  .btn-success:hover { background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%); transform: translateY(-2px); }
+  .btn-danger { background: linear-gradient(90deg, #dc2626 0%, #991b1b 100%); transition: background 0.2s ease, transform 0.2s ease; }
+  .btn-danger:hover { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); transform: translateY(-2px); }
+  .btn-warning { background: linear-gradient(90deg, #d97706 0%, #b45309 100%); transition: background 0.2s ease, transform 0.2s ease; }
+  .btn-warning:hover { background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); transform: translateY(-2px); }
+  .btn-secondary { background: linear-gradient(90deg, #334155 0%, #1e293b 100%); transition: background 0.2s ease, transform 0.2s ease; }
+  .btn-secondary:hover { background: linear-gradient(90deg, #475569 0%, #334155 100%); transform: translateY(-2px); }
+  .log-pre { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid #334155; color: #e2e8f0; white-space: pre-wrap; word-break: break-word; }
+  .form-control { background-color: #1e293b; border: 1px solid #334155; color: #e2e8f0; }
+  .log-filter-btn { background-color: #334155; transition: background-color 0.2s ease; }
+  .log-filter-btn:hover { background-color: #475569; }
+  .log-filter-btn.active { background-color: #4f46e5; font-weight: bold; color: white; }
+  .content-wrapper { position: relative; z-index: 2; }
+  .floating-icons { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 1; }
+  .floating-icon { position: absolute; opacity: 0.05; font-size: 6rem; animation: float 6s ease-in-out infinite; color: #6366f1; }
+  .floating-icon:nth-child(1) { top: 40%; left: 80%; animation-delay: 0s; }
+  .floating-icon:nth-child(2) { top: 60%; left: 67%; animation-delay: 1s; }
+  .floating-icon:nth-child(3) { top: 40%; left: 54%; animation-delay: 2s; }
+  .floating-icon:nth-child(4) { top: 60%; left: 41%; animation-delay: 3s; }
+  .floating-icon:nth-child(5) { top: 40%; left: 28%; animation-delay: 4s; }
+  .floating-icon:nth-child(6) { top: 80%; left: 54%; animation-delay: 5s; }
+  /* Tab Styles */
+  .tab, .inner-tab { border: 1px solid transparent; border-bottom: none; padding: 0.5rem 1rem; cursor: pointer; font-weight: 500; color: #94a3b8; transition: color 0.2s, border-color 0.2s; }
+  .tab:hover, .inner-tab:hover { color: #e2e8f0; }
+  .tab.active, .inner-tab.active { color: #f1f5f9; border-color: #334155; background-color: #1e293b; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; }
+  .tab-content.hidden, .inner-tab-content.hidden { display: none; }
+  @keyframes float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
+</style>
+</head>
+<body class="text-gray-100 min-h-screen">
+  <div class="floating-icons" id="floating-icons-container"></div>
+
+  <div class="content-wrapper">
+    <div class="flex">
+      {{template "sidebar.html" .}}
+      <main class="flex-1 p-8">
+        <div class="max-w-4xl mx-auto">
+          <h1 class="text-2xl font-semibold text-gray-100 mb-4">Manage FRP</h1>
+
+          <!-- Main Tabs -->
+          <div class="mb-4 border-b border-gray-700">
+              <nav class="-mb-px flex space-x-2" aria-label="Tabs">
+                  <button id="main-tab-clients" onclick="switchMainTab('clients')" class="tab active">Clients</button>
+                  <button id="main-tab-servers" onclick="switchMainTab('servers')" class="tab">Servers</button>
+              </nav>
+          </div>
+
+          <!-- Main Content: Clients -->
+          <div id="main-content-clients" class="tab-content">
+            <div class="flex space-x-3 mb-6">
+              <a href="/client/start_all" class="btn-success px-4 py-2 rounded-lg text-white font-medium">Start All</a>
+              <a href="/client/stop_all" class="btn-danger px-4 py-2 rounded-lg text-white font-medium">Stop All</a>
+              <a href="/client/restart_all" class="btn-warning px-4 py-2 rounded-lg text-white font-medium">Restart All</a>
+            </div>
+            {{ if .Clients }}
+              <div class="mb-4 border-b border-gray-700">
+                <nav class="-mb-px flex space-x-2 overflow-x-auto" aria-label="Inner Tabs">
+                  {{ range $index, $client := .Clients }}
+                    <button id="tab-client-{{ $client }}" onclick="switchInnerTab('client', '{{ $client }}')" class="inner-tab client-tab whitespace-nowrap {{ if eq $index 0 }}active{{ end }}">{{ $client }}</button>
+                  {{ end }}
+                </nav>
+              </div>
+              {{ range $index, $client := .Clients }}
+              <div id="content-client-{{ $client }}" class="inner-tab-content client-tab-content {{ if ne $index 0 }}hidden{{ end }}">
+                <div class="card rounded-xl p-6 shadow-lg">
+                  <h5 class="text-lg font-semibold text-gray-100 mb-3">{{ $client }}</h5>
+                  <div class="flex space-x-3 mb-3">
+                    <a href="/client/start/{{ $client }}" class="btn-success px-4 py-2 rounded-lg text-white font-medium">Start</a>
+                    <a href="/client/stop/{{ $client }}" class="btn-danger px-4 py-2 rounded-lg text-white font-medium">Stop</a>
+                    <a href="/client/restart/{{ $client }}" class="btn-warning px-4 py-2 rounded-lg text-white font-medium">Restart</a>
+                    <a href="/client/edit/{{ $client }}" class="btn-primary px-4 py-2 rounded-lg text-white font-medium">Edit Config</a>
+                  </div>
+                  <h6 class="text-sm font-medium text-gray-400 mt-3">Live Logs</h6>
+                  <div class="flex items-center space-x-2 my-2">
+                    <input type="text" placeholder="Search logs..." oninput="applyFilters('client', '{{ $client }}')" id="search-client-{{ $client }}" class="form-control w-full px-2 py-1 rounded-md text-sm">
+                    <div class="flex-shrink-0 space-x-1">
+                      <button onclick="applyFilters('client', '{{ $client }}', 'all', this)" class="log-filter-btn active px-2 py-1 text-xs rounded-md">All</button>
+                      <button onclick="applyFilters('client', '{{ $client }}', '[I]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">INFO</button>
+                      <button onclick="applyFilters('client', '{{ $client }}', '[W]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">WARN</button>
+                      <button onclick="applyFilters('client', '{{ $client }}', '[E]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">ERROR</button>
+                    </div>
+                  </div>
+                  <pre id="logs-client-{{ $client }}" class="log-pre p-4 mt-2 rounded-lg text-sm" style="max-height: 300px; overflow-y: auto;">Connecting to log stream...</pre>
+                </div>
+              </div>
+              {{ end }}
+            {{ else }}
+              <p class="text-gray-400">No clients found.</p>
+            {{ end }}
+          </div>
+
+          <!-- Main Content: Servers -->
+          <div id="main-content-servers" class="tab-content hidden">
+            <div class="flex space-x-3 mb-6">
+              <a href="/server/start_all" class="btn-success px-4 py-2 rounded-lg text-white font-medium">Start All</a>
+              <a href="/server/stop_all" class="btn-danger px-4 py-2 rounded-lg text-white font-medium">Stop All</a>
+              <a href="/server/restart_all" class="btn-warning px-4 py-2 rounded-lg text-white font-medium">Restart All</a>
+            </div>
+            {{ if .Servers }}
+              <div class="mb-4 border-b border-gray-700">
+                <nav class="-mb-px flex space-x-2 overflow-x-auto" aria-label="Inner Tabs">
+                  {{ range $index, $server := .Servers }}
+                    <button id="tab-server-{{ $server }}" onclick="switchInnerTab('server', '{{ $server }}')" class="inner-tab server-tab whitespace-nowrap {{ if eq $index 0 }}active{{ end }}">{{ $server }}</button>
+                  {{ end }}
+                </nav>
+              </div>
+              {{ range $index, $server := .Servers }}
+              <div id="content-server-{{ $server }}" class="inner-tab-content server-tab-content {{ if ne $index 0 }}hidden{{ end }}">
+                <div class="card rounded-xl p-6 mb-4 shadow-lg">
+                  <h5 class="text-lg font-semibold text-gray-100 mb-3">{{ $server }}</h5>
+                  <div class="flex space-x-3 mb-3">
+                    <a href="/server/start/{{ $server }}" class="btn-success px-4 py-2 rounded-lg text-white font-medium">Start</a>
+                    <a href="/server/stop/{{ $server }}" class="btn-danger px-4 py-2 rounded-lg text-white font-medium">Stop</a>
+                    <a href="/server/restart/{{ $server }}" class="btn-warning px-4 py-2 rounded-lg text-white font-medium">Restart</a>
+                    <a href="/server/edit/{{ $server }}" class="btn-primary px-4 py-2 rounded-lg text-white font-medium">Edit Config</a>
+                  </div>
+                  <h6 class="text-sm font-medium text-gray-400 mt-3">Live Logs</h6>
+                  <div class="flex items-center space-x-2 my-2">
+                    <input type="text" placeholder="Search logs..." oninput="applyFilters('server', '{{ $server }}')" id="search-server-{{ $server }}" class="form-control w-full px-2 py-1 rounded-md text-sm">
+                    <div class="flex-shrink-0 space-x-1">
+                      <button onclick="applyFilters('server', '{{ $server }}', 'all', this)" class="log-filter-btn active px-2 py-1 text-xs rounded-md">All</button>
+                      <button onclick="applyFilters('server', '{{ $server }}', '[I]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">INFO</button>
+                      <button onclick="applyFilters('server', '{{ $server }}', '[W]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">WARN</button>
+                      <button onclick="applyFilters('server', '{{ $server }}', '[E]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">ERROR</button>
+                    </div>
+                  </div>
+                  <pre id="logs-server-{{ $server }}" class="log-pre p-4 mt-2 rounded-lg text-sm" style="max-height: 300px; overflow-y: auto;">Connecting to log stream...</pre>
+                </div>
+              </div>
+              {{ end }}
+            {{ else }}
+              <p class="text-gray-400">No servers found.</p>
+            {{ end }}
+          </div>
+          
+          <a href="/" class="btn-secondary mt-6 px-4 py-2 rounded-lg text-gray-200 text-center inline-block">Back</a>
+        </div>
+      </main>
+    </div>
+  </div>
+<script>
+    let logBuffers = {};
+    let currentFilters = {};
+    const MAX_LOG_LINES = 200;
+
+    function switchMainTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.getElementById(`main-content-${tabName}`).classList.remove('hidden');
+      document.getElementById(`main-tab-${tabName}`).classList.add('active');
+    }
+
+    function switchInnerTab(prefix, tabName) {
+      document.querySelectorAll(`.${prefix}-tab-content`).forEach(content => content.classList.add('hidden'));
+      document.querySelectorAll(`.${prefix}-tab`).forEach(tab => tab.classList.remove('active'));
+      document.getElementById(`content-${prefix}-${tabName}`).classList.remove('hidden');
+      document.getElementById(`tab-${prefix}-${tabName}`).classList.add('active');
+    }
+
+    function cleanLogLine(line) {
+        if (line.includes('[') && (line.includes(' [I] ') || line.includes(' [W] ') || line.includes(' [E] '))) {
+            const systemdTimestampMatch = line.match(/^[A-Za-z]{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+/);
+            const systemdTimestamp = systemdTimestampMatch ? systemdTimestampMatch[0] : '';
+            const cleanedLine = line.replace(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+\s+\[(I|W|E)\]\s+\[[^\]]+\]\s*/, ' [$1] ');
+            return (systemdTimestamp + cleanedLine).replace(/dashingorder\.aeza\.network/g, '');
+        }
+        return line;
+    }
+
+    function applyFilters(prefix, name, level = null, btnElement = null) {
+        const bufferKey = `${prefix}-${name}`;
+        if (level && btnElement) {
+            currentFilters[bufferKey] = { ...currentFilters[bufferKey], level: level === 'all' ? null : level };
+            const buttonGroup = btnElement.parentElement;
+            buttonGroup.querySelectorAll('.log-filter-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+        }
+
+        const searchTerm = document.getElementById(`search-${prefix}-${name}`).value.toLowerCase();
+        const logsElement = document.getElementById(`logs-${prefix}-${name}`);
+        const buffer = logBuffers[bufferKey] || [];
+        const activeLevel = currentFilters[bufferKey]?.level;
+
+        const filteredLines = buffer.filter(line => {
+            const lineLower = line.toLowerCase();
+            const searchMatch = !searchTerm || lineLower.includes(searchTerm);
+            const levelMatch = !activeLevel || line.includes(activeLevel);
+            return searchMatch && levelMatch;
+        });
+
+        logsElement.innerText = filteredLines.join('\n') || "No matching logs found.";
+        logsElement.scrollTop = logsElement.scrollHeight;
+    }
+
+    function connectToLogStream(type, name) {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/logs/${type}/${name}`;
+        const ws = new WebSocket(wsUrl);
+        const logsElement = document.getElementById(`logs-${type}-${name}`);
+        const bufferKey = `${type}-${name}`;
+
+        ws.onopen = () => {
+            console.log(`WebSocket connected for ${bufferKey}`);
+            logBuffers[bufferKey] = [];
+            logsElement.innerText = 'Log stream connected. Waiting for data...';
+        };
+
+        ws.onmessage = (event) => {
+            const cleanedLine = cleanLogLine(event.data);
+            if (!logBuffers[bufferKey]) {
+                logBuffers[bufferKey] = [];
+            }
+            logBuffers[bufferKey].push(cleanedLine);
+            if (logBuffers[bufferKey].length > MAX_LOG_LINES) {
+                logBuffers[bufferKey].shift();
+            }
+            applyFilters(type, name);
+        };
+
+        ws.onclose = () => {
+            console.log(`WebSocket disconnected for ${bufferKey}. Reconnecting in 5s.`);
+            logsElement.innerText += '\n\n[Stream disconnected. Reconnecting...]';
+            setTimeout(() => connectToLogStream(type, name), 5000);
+        };
+
+        ws.onerror = (error) => {
+            console.error(`WebSocket error for ${bufferKey}:`, error);
+            logsElement.innerText += '\n\n[An error occurred with the log stream.]';
+            ws.close();
+        };
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll("pre[id^='logs-client-']").forEach(pre => {
+            const clientName = pre.id.replace("logs-client-", "");
+            connectToLogStream('client', clientName);
+        });
+        document.querySelectorAll("pre[id^='logs-server-']").forEach(pre => {
+            const serverName = pre.id.replace("logs-server-", "");
+            connectToLogStream('server', serverName);
+        });
+
+        // Handle initial tab state from URL hash
+        const hash = window.location.hash;
+        if (hash) {
+            // Remove the '#' and split "mainTab:innerTab"
+            const parts = hash.substring(1).split(':');
+            const mainTab = parts[0]; // 'clients' or 'servers'
+            const innerTabName = parts[1]; // e.g., 'my-game-server'
+
+            if (mainTab === 'clients' || mainTab === 'servers') {
+                // Switch the main tab first
+                switchMainTab(mainTab);
+
+                if (innerTabName) {
+                    const prefix = mainTab.slice(0, -1); // 'client' or 'server'
+                    const innerTabElement = document.getElementById(`tab-${prefix}-${innerTabName}`);
+                    
+                    // Only switch if the inner tab actually exists on the page
+                    if (innerTabElement) {
+                        switchInnerTab(prefix, innerTabName);
+                    }
+                }
+            }
+        }
+    });
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('floating-icons-container');
+    if (container) {
+      const techEmojis = ['💻', '🖥️', '💾', '💿', '🔌', '📡', '🛰️', '🚀', '⚙️', '🔧', '🔬', '💡', '📈', '📊', '🔗', '🌐', '☁️', '⚡️', '🤖', '👾', '📱', '⌨️', '🖱️', '🔋', '🧠'];
+      const iconCount = 6; // As per the CSS
+      let iconsHtml = '';
+      for (let i = 0; i < iconCount; i++) {
+        const randomEmoji = techEmojis[Math.floor(Math.random() * techEmojis.length)];
+        iconsHtml += `<div class="floating-icon">${randomEmoji}</div>`;
+      }
+      container.innerHTML = iconsHtml;
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage EFRP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(180deg, #0f172a 0%, #0b0f1a 50%, #1e1b2e 100%);
+    color: #f1f5f9;
+  }
+  .card { background: linear-gradient(135deg, #1e293b 0%, #111827 100%); }
+  .btn-success { background: linear-gradient(90deg, #16a34a 0%, #15803d 100%); transition: background 0.2s ease, transform 0.2s ease; }
+  .btn-success:hover { background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%); transform: translateY(-2px); }
+  .btn-danger { background: linear-gradient(90deg, #dc2626 0%, #991b1b 100%); transition: background 0.2s ease, transform 0.2s ease; }
+  .btn-danger:hover { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); transform: translateY(-2px); }
+  .btn-secondary { background: linear-gradient(90deg, #334155 0%, #1e293b 100%); transition: background 0.2s ease, transform 0.2s ease; }
+  .btn-secondary:hover { background: linear-gradient(90deg, #475569 0%, #334155 100%); transform: translateY(-2px); }
+  .log-pre { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid #334155; color: #e2e8f0; white-space: pre-wrap; word-break: break-word; }
+  .form-control { background-color: #1e293b; border: 1px solid #334155; color: #e2e8f0; }
+  .log-filter-btn { background-color: #334155; transition: background-color 0.2s ease; }
+  .log-filter-btn:hover { background-color: #475569; }
+  .log-filter-btn.active { background-color: #4f46e5; font-weight: bold; color: white; }
+  .content-wrapper { position: relative; z-index: 2; }
+  .floating-icons { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 1; }
+  .floating-icon { position: absolute; opacity: 0.05; font-size: 6rem; animation: float 6s ease-in-out infinite; color: #6366f1; }
+  .floating-icon:nth-child(1) { top: 40%; left: 80%; animation-delay: 0s; }
+  .floating-icon:nth-child(2) { top: 60%; left: 67%; animation-delay: 1s; }
+  .floating-icon:nth-child(3) { top: 40%; left: 54%; animation-delay: 2s; }
+  .floating-icon:nth-child(4) { top: 60%; left: 41%; animation-delay: 3s; }
+  .floating-icon:nth-child(5) { top: 40%; left: 28%; animation-delay: 4s; }
+  .floating-icon:nth-child(6) { top: 80%; left: 54%; animation-delay: 5s; }
+  @keyframes float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
+</style>
+</head>
+<body class="text-gray-100 min-h-screen">
+  <div class="floating-icons" id="floating-icons-container"></div>
+
+  <div class="content-wrapper">
+    <div class="flex">
+      {{template "sidebar.html" .}}
+      <main class="flex-1 p-8">
+        <div class="max-w-4xl mx-auto">
+          <h1 class="text-2xl font-semibold text-gray-100 mb-4">Manage EFRP</h1>
+          <div class="card rounded-xl p-6 mb-4 shadow-lg">
+            <div class="flex space-x-3 mb-3">
+              <a href="/efrp/start" class="btn-success px-4 py-2 rounded-lg text-white font-medium">Start</a>
+              <a href="/efrp/stop" class="btn-danger px-4 py-2 rounded-lg text-white font-medium">Stop</a>
+              <a href="/" class="btn-secondary px-4 py-2 rounded-lg text-gray-200 text-center">Back</a>
+            </div>
+            <h6 class="text-sm font-medium text-gray-400 mt-3">Live Logs</h6>
+            <div class="flex items-center space-x-2 my-2">
+              <input type="text" placeholder="Search logs..." oninput="applyFilters('efrp')" id="search-efrp" class="form-control w-full px-2 py-1 rounded-md text-sm">
+              <div class="flex-shrink-0 space-x-1 log-filter-buttons">
+                <button onclick="applyFilters('efrp', 'all', this)" class="log-filter-btn active px-2 py-1 text-xs rounded-md">All</button>
+                <button onclick="applyFilters('efrp', '[I]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">INFO</button>
+                <button onclick="applyFilters('efrp', '[W]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">WARN</button>
+                <button onclick="applyFilters('efrp', '[E]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">ERROR</button>
+              </div>
+            </div>
+            <pre id="logs-efrp" class="log-pre p-4 mt-2 rounded-lg text-sm" style="max-height: 400px; overflow-y: auto;">Connecting to log stream...</pre>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+<script>
+    let logBuffers = {};
+    let currentFilters = {};
+    const MAX_LOG_LINES = 200;
+
+    function cleanLogLine(line) {
+        if (line.includes('frpc[') && (line.includes(' [I] ') || line.includes(' [W] ') || line.includes(' [E] '))) {
+            const systemdTimestampMatch = line.match(/^[A-Za-z]{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+/);
+            const systemdTimestamp = systemdTimestampMatch ? systemdTimestampMatch[0] : '';
+            const cleanedLine = line.replace(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+\s+\[(I|W|E)\]\s+\[[^\]]+\]\s*/, ' [$1] ');
+            return (systemdTimestamp + cleanedLine).replace(/dashingorder\.aeza\.network/g, '');
+        }
+        return line;
+    }
+
+    function applyFilters(serviceName, level = null, btnElement = null) {
+        if (level && btnElement) {
+            currentFilters[serviceName] = { ...currentFilters[serviceName], level: level === 'all' ? null : level };
+            const buttonGroup = btnElement.parentElement;
+            buttonGroup.querySelectorAll('.log-filter-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+        }
+
+        const searchTerm = document.getElementById(`search-${serviceName}`).value.toLowerCase();
+        const logsElement = document.getElementById(`logs-${serviceName}`);
+        const buffer = logBuffers[serviceName] || [];
+        const activeLevel = currentFilters[serviceName]?.level;
+
+        const filteredLines = buffer.filter(line => {
+            const lineLower = line.toLowerCase();
+            const searchMatch = !searchTerm || lineLower.includes(searchTerm);
+            const levelMatch = !activeLevel || line.includes(activeLevel);
+            return searchMatch && levelMatch;
+        });
+
+        logsElement.innerText = filteredLines.join('\n') || "No matching logs found.";
+        logsElement.scrollTop = logsElement.scrollHeight;
+    }
+
+    function connectToLogStream(serviceName) {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        // For EFRP, the type is 'efrp' and the name can be anything, as the backend knows the service name.
+        const wsUrl = `${protocol}//${window.location.host}/ws/logs/efrp/${serviceName}`;
+        const ws = new WebSocket(wsUrl);
+        const logsElement = document.getElementById(`logs-${serviceName}`);
+
+        ws.onopen = () => {
+            console.log(`WebSocket connected for ${serviceName}`);
+            logBuffers[serviceName] = [];
+            logsElement.innerText = 'Log stream connected. Waiting for data...';
+        };
+
+        ws.onmessage = (event) => {
+            const cleanedLine = cleanLogLine(event.data);
+            if (!logBuffers[serviceName]) {
+                logBuffers[serviceName] = [];
+            }
+            logBuffers[serviceName].push(cleanedLine);
+            if (logBuffers[serviceName].length > MAX_LOG_LINES) {
+                logBuffers[serviceName].shift();
+            }
+            applyFilters(serviceName);
+        };
+
+        ws.onclose = () => {
+            console.log(`WebSocket disconnected for ${serviceName}. Reconnecting in 5s.`);
+            logsElement.innerText += '\n\n[Stream disconnected. Reconnecting...]';
+            setTimeout(() => connectToLogStream(serviceName), 5000);
+        };
+
+        ws.onerror = (error) => {
+            console.error(`WebSocket error for ${serviceName}:`, error);
+            logsElement.innerText += '\n\n[An error occurred with the log stream.]';
+            ws.close();
+        };
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        connectToLogStream('efrp');
+    });
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('floating-icons-container');
+    if (container) {
+      const techEmojis = ['💻', '🖥️', '💾', '💿', '🔌', '📡', '🛰️', '🚀', '⚙️', '🔧', '🔬', '💡', '📈', '📊', '🔗', '🌐', '☁️', '⚡️', '🤖', '👾', '📱', '⌨️', '🖱️', '🔋', '🧠'];
+      const iconCount = 6; // As per the CSS
+      let iconsHtml = '';
+      for (let i = 0; i < iconCount; i++) {
+        const randomEmoji = techEmojis[Math.floor(Math.random() * techEmojis.length)];
+        iconsHtml += `<div class="floating-icon">${randomEmoji}</div>`;
+      }
+      container.innerHTML = iconsHtml;
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup & Presets</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(180deg, #0f172a 0%, #0b0f1a 50%, #1e1b2e 100%);
+    color: #f1f5f9;
+  }
+  .form-container, .container-card { background: linear-gradient(135deg, #1e293b 0%, #111827 100%); border: 1px solid #334155; padding: 1.5rem; border-radius: 0.75rem; }
+  .btn-primary { background: linear-gradient(90deg, #334155 0%, #1e293b 100%); transition: background 0.2s ease, transform 0.2s ease; color: #f1f5f9; border: none; }
+  .btn-primary:hover { background: linear-gradient(90deg, #475569 0%, #334155 100%); transform: translateY(-2px); }
+  .btn-secondary { background: linear-gradient(90deg, #475569 0%, #334155 100%); transition: background 0.2s ease, transform 0.2s ease; color: #f1f5f9; border: none; }
+  .btn-secondary:hover { background: linear-gradient(90deg, #64748b 0%, #475569 100%); transform: translateY(-2px); }
+  .btn-danger { background: linear-gradient(90deg, #dc2626 0%, #991b1b 100%); transition: background 0.2s ease, transform 0.2s ease; color: #f1f5f9; border: none; }
+  .btn-danger:hover { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); transform: translateY(-2px); }
+  .form-control, .form-select { background-color: #1e293b; border: 1px solid #334155; color: #e2e8f0; padding: 0.75rem; border-radius: 0.5rem; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+  .form-control:focus, .form-select:focus { background-color: #1e293b; border-color: #6366f1; outline: none; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+  .form-label { color: #94a3b8; }
+  .preset-item { background-color: #1e293b; border: 1px solid #334155; }
+  .content-wrapper { position: relative; z-index: 2; }
+  .floating-icons { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 1; }
+  .floating-icon { position: absolute; opacity: 0.05; font-size: 6rem; animation: float 6s ease-in-out infinite; color: #6366f1; }
+  .floating-icon:nth-child(1) { top: 40%; left: 80%; animation-delay: 0s; }
+  .floating-icon:nth-child(2) { top: 60%; left: 67%; animation-delay: 1s; }
+  .floating-icon:nth-child(3) { top: 40%; left: 54%; animation-delay: 2s; }
+  .floating-icon:nth-child(4) { top: 60%; left: 41%; animation-delay: 3s; }
+  .floating-icon:nth-child(5) { top: 40%; left: 28%; animation-delay: 4s; }
+  .floating-icon:nth-child(6) { top: 80%; left: 54%; animation-delay: 5s; }
+  .main-tab, .preset-tab { border: 1px solid transparent; border-bottom: none; padding: 0.5rem 1rem; cursor: pointer; font-weight: 500; color: #94a3b8; transition: color 0.2s, border-color 0.2s; }
+  .main-tab:hover, .preset-tab:hover { color: #e2e8f0; }
+  .main-tab.active, .preset-tab.active { color: #f1f5f9; border-color: #334155; background-color: #1e293b; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; }
+  .main-tab-content.hidden, .preset-tab-content.hidden { display: none; }
+  @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
+</style>
+</head>
+<body class="text-gray-100 min-h-screen">
+  <div class="floating-icons" id="floating-icons-container"></div>
+
+  <div class="content-wrapper">
+    <div class="flex">
+      {{template "sidebar.html" .}}
+      <main class="flex-1 p-8">
+        <div class="max-w-4xl mx-auto">
+          <h1 class="text-2xl font-semibold text-gray-100 mb-6">Setup & Presets</h1>
+
+          <!-- Main Tabs -->
+          <div class="mb-4 border-b border-gray-700">
+            <nav class="-mb-px flex space-x-4" aria-label="Tabs">
+              <button id="main-tab-setup-client" onclick="switchMainTab('setup-client')" class="main-tab active">Setup Client</button>
+              <button id="main-tab-setup-server" onclick="switchMainTab('setup-server')" class="main-tab">Setup Server</button>
+              <button id="main-tab-presets" onclick="switchMainTab('presets')" class="main-tab">Manage Presets</button>
+              <button id="main-tab-system" onclick="switchMainTab('system')" class="main-tab">System Management</button>
+            </nav>
+          </div>
+
+          <!-- Main Tab Content: Setup Client -->
+          <div id="main-content-setup-client" class="main-tab-content">
+            <div class="form-container shadow-lg max-w-lg mx-auto">
+              <h2 class="text-xl font-semibold text-gray-100 mb-6">Setup New FRP Client</h2>
+              <form id="client-form" action="/setup-client" method="post" class="space-y-4">
+                <div>
+                  <label class="form-label block text-sm font-medium mb-2">Load Preset</label>
+                  <select id="client-preset-selector" class="form-select w-full">
+                    <option value="">-- Select a Preset --</option>
+                  </select>
+                </div>
+                <hr class="border-gray-600">
+                <div><label class="form-label block text-sm font-medium">Client Name (e.g., my-game-server)</label><input type="text" name="client_name" required class="form-control w-full" placeholder="A unique name for this client"></div>
+                <div><label class="form-label block text-sm font-medium">Server IP</label><input type="text" name="server_ip" required class="form-control w-full"></div>
+                <div><label class="form-label block text-sm font-medium">Server Port</label><input type="text" name="server_port" value="7000" class="form-control w-full"></div>
+                <div><label class="form-label block text-sm font-medium">Auth Token</label><input type="text" name="auth_token" value="mikeesierrah" class="form-control w-full"></div>
+                <div><label class="form-label block text-sm font-medium">Transport</label><select name="transport" class="form-select w-full"><option value="tcp" selected>TCP</option><option value="websocket">Websocket</option><option value="quic">QUIC</option><option value="kcp">KCP</option></select></div>
+                <div><label class="form-label block text-sm font-medium">Enable TCP Mux</label><select name="use_mux" class="form-select w-full"><option value="false" selected>No</option><option value="true">Yes</option></select></div>
+                <div><label class="form-label block text-sm font-medium">Local Ports (e.g., 22,6000-6006,6007)</label><input type="text" name="port_input" required class="form-control w-full"></div>
+                <div class="flex space-x-3 pt-4">
+                  <button type="submit" class="btn-primary w-full px-4 py-3 rounded-lg text-white font-medium">Setup Client</button>
+                  <a href="/" class="btn-secondary w-full px-4 py-3 rounded-lg text-gray-200 text-center">Back</a>
+                </div>
+              </form>
+            </div>
+          </div>
+          
+          <!-- Main Tab Content: Setup Server -->
+          <div id="main-content-setup-server" class="main-tab-content hidden">
+            <div class="form-container rounded-xl p-6 shadow-lg max-w-lg mx-auto">
+              <h2 class="text-xl font-semibold text-gray-100 mb-6">Setup New FRP Server</h2>
+              <form id="server-form" action="/setup-server" method="post" class="space-y-4">
+                <div>
+                  <label class="form-label block text-sm font-medium mb-2">Load Preset</label>
+                  <select id="server-preset-selector" class="form-select w-full">
+                    <option value="">-- Select a Preset --</option>
+                  </select>
+                </div>
+                <hr class="border-gray-600">
+                <div><label class="form-label block text-sm font-medium">Server Name (e.g., public-server-1)</label><input type="text" name="server_name" required class="form-control w-full" placeholder="A unique name for this server"></div>
+                <div><label class="form-label block text-sm font-medium">Bind Port</label><input type="text" name="bind_port" value="7000" class="form-control w-full"></div>
+                <div><label class="form-label block text-sm font-medium">Protocol</label><select name="proto_choice" class="form-select w-full"><option value="1">None</option><option value="2" selected>QUIC</option><option value="3">KCP</option></select></div>
+                <div><label class="form-label block text-sm font-medium">Enable TCP Mux</label><select name="use_mux" class="form-select w-full"><option value="false" selected>No</option><option value="true">Yes</option></select></div>
+                <div><label class="form-label block text-sm font-medium">Auth Token</label><input type="text" name="token" value="mikeesierrah" class="form-control w-full"></div>
+                <div class="flex space-x-3 pt-4">
+                  <button type="submit" class="btn-primary w-full px-4 py-3 rounded-lg text-white font-medium">Setup Server</button>
+                  <a href="/" class="btn-secondary w-full px-4 py-3 rounded-lg text-gray-200 text-center">Back</a>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Main Tab Content: Presets -->
+          <div id="main-content-presets" class="main-tab-content hidden">
+            <div class="mb-4 border-b border-gray-700">
+              <nav class="-mb-px flex space-x-4" aria-label="Preset Tabs">
+                <button id="preset-tab-client" onclick="switchPresetTab('client')" class="preset-tab active">Client Presets</button>
+                <button id="preset-tab-server" onclick="switchPresetTab('server')" class="preset-tab">Server Presets</button>
+              </nav>
+            </div>
+            <div id="preset-content-client" class="preset-tab-content">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="container-card">
+                  <h2 class="text-xl font-semibold mb-4">Create New Client Preset</h2>
+                  <form id="client-preset-form" class="space-y-4">
+                    <div><label class="form-label block text-sm font-medium">Preset Name</label><input type="text" name="name" required class="form-control w-full"></div>
+                    <div><label class="form-label block text-sm font-medium">Server IP</label><input type="text" name="server_ip" required class="form-control w-full"></div>
+                    <div><label class="form-label block text-sm font-medium">Server Port</label><input type="text" name="server_port" value="7000" class="form-control w-full"></div>
+                    <div><label class="form-label block text-sm font-medium">Auth Token</label><input type="text" name="auth_token" value="mikeesierrah" class="form-control w-full"></div>
+                    <div><label class="form-label block text-sm font-medium">Transport</label><select name="transport" class="form-select w-full"><option value="tcp" selected>TCP</option><option value="websocket">Websocket</option><option value="quic">QUIC</option><option value="kcp">KCP</option></select></div>
+                    <div><label class="form-label block text-sm font-medium">Enable TCP Mux</label><select name="use_mux" class="form-select w-full"><option value="false" selected>No</option><option value="true">Yes</option></select></div>
+                    <button type="submit" class="btn-primary w-full px-4 py-3 rounded-lg text-white font-medium">Save Client Preset</button>
+                  </form>
+                </div>
+                <div class="container-card">
+                  <h2 class="text-xl font-semibold mb-4">Existing Client Presets</h2>
+                  <div id="client-preset-list" class="space-y-3 max-h-[600px] overflow-y-auto"></div>
+                </div>
+              </div>
+            </div>
+            <div id="preset-content-server" class="preset-tab-content hidden">
+               <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="container-card">
+                  <h2 class="text-xl font-semibold mb-4">Create New Server Preset</h2>
+                  <form id="server-preset-form" class="space-y-4">
+                    <div><label class="form-label block text-sm font-medium">Preset Name</label><input type="text" name="name" required class="form-control w-full"></div>
+                    <div><label class="form-label block text-sm font-medium">Bind Port</label><input type="text" name="bind_port" value="7000" class="form-control w-full"></div>
+                    <div><label class="form-label block text-sm font-medium">Protocol</label><select name="proto_choice" class="form-select w-full"><option value="1">None</option><option value="2" selected>QUIC</option><option value="3">KCP</option></select></div>
+                    <div><label class="form-label block text-sm font-medium">Enable TCP Mux</label><select name="use_mux" class="form-select w-full"><option value="false" selected>No</option><option value="true">Yes</option></select></div>
+                    <div><label class="form-label block text-sm font-medium">Auth Token</label><input type="text" name="token" value="mikeesierrah" class="form-control w-full"></div>
+                    <button type="submit" class="btn-primary w-full px-4 py-3 rounded-lg text-white font-medium">Save Server Preset</button>
+                  </form>
+                </div>
+                <div class="container-card">
+                  <h2 class="text-xl font-semibold mb-4">Existing Server Presets</h2>
+                  <div id="server-preset-list" class="space-y-3 max-h-[600px] overflow-y-auto"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Main Tab Content: System Management -->
+          <div id="main-content-system" class="main-tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <!-- Install Card -->
+              <div class="container-card">
+                <h2 class="text-xl font-semibold mb-4">Install/Update FRP</h2>
+                <p class="text-gray-400 mb-4 text-sm">This will download the latest version of FRP from GitHub, install the binaries, and set up the systemd services. This can be used for a fresh install or to update an existing one.</p>
+                <button id="install-btn" class="btn-primary w-full px-4 py-3 rounded-lg text-white font-medium">Install/Update FRP</button>
+              </div>
+              <!-- Uninstall Card -->
+              <div class="container-card">
+                <h2 class="text-xl font-semibold mb-4 text-red-400">Uninstall FRP</h2>
+                <p class="text-gray-400 mb-4 text-sm">
+                  <span class="font-bold text-yellow-400">Warning:</span> This action is irreversible. It will stop all FRP services, remove the binaries, delete all server and client configurations, and remove the systemd service files.
+                </p>
+                <button id="uninstall-btn" class="btn-danger w-full px-4 py-3 rounded-lg text-white font-medium">Uninstall FRP</button>
+              </div>
+            </div>
+            <!-- Status/Feedback Area -->
+            <div id="system-status" class="mt-6 p-4 rounded-lg bg-slate-800 border border-slate-700 text-sm hidden"></div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+<script>
+  function switchMainTab(tabName) {
+    document.querySelectorAll('.main-tab-content').forEach(content => content.classList.add('hidden'));
+    document.querySelectorAll('.main-tab').forEach(tab => tab.classList.remove('active'));
+    document.getElementById(`main-content-${tabName}`).classList.remove('hidden');
+    document.getElementById(`main-tab-${tabName}`).classList.add('active');
+  }
+
+  function switchPresetTab(tabName) {
+    document.querySelectorAll('.preset-tab-content').forEach(content => content.classList.add('hidden'));
+    document.querySelectorAll('.preset-tab').forEach(tab => tab.classList.remove('active'));
+    document.getElementById(`preset-content-${tabName}`).classList.remove('hidden');
+    document.getElementById(`preset-tab-${tabName}`).classList.add('active');
+  }
+
+  // --- Client Presets Management ---
+  async function loadClientPresets() {
+    const clientPresetList = document.getElementById('client-preset-list');
+    const response = await fetch('/api/presets');
+    const presets = await response.json();
+    clientPresetList.innerHTML = '';
+    if (Object.keys(presets).length === 0) {
+      clientPresetList.innerHTML = '<p class="text-gray-400">No client presets saved yet.</p>';
+      return;
+    }
+    for (const name in presets) {
+      const preset = presets[name];
+      const div = document.createElement('div');
+      div.className = 'preset-item p-4 rounded-lg flex justify-between items-center';
+      div.innerHTML = `<div><h3 class="font-bold">${preset.name}</h3><p class="text-sm text-gray-400">${preset.server_ip}:${preset.server_port}</p></div><button class="btn-danger px-3 py-1 rounded-md text-sm" onclick="deleteClientPreset('${name}')">Delete</button>`;
+      clientPresetList.appendChild(div);
+    }
+  }
+
+  async function deleteClientPreset(name) {
+    if (!confirm(`Delete client preset "${name}"?`)) return;
+    await fetch('/api/presets/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+    loadClientPresets();
+  }
+
+  // --- Server Presets Management ---
+  async function loadServerPresets() {
+    const serverPresetList = document.getElementById('server-preset-list');
+    const response = await fetch('/api/presets/server');
+    const presets = await response.json();
+    serverPresetList.innerHTML = '';
+    if (Object.keys(presets).length === 0) {
+      serverPresetList.innerHTML = '<p class="text-gray-400">No server presets saved yet.</p>';
+      return;
+    }
+    for (const name in presets) {
+      const preset = presets[name];
+      const div = document.createElement('div');
+      div.className = 'preset-item p-4 rounded-lg flex justify-between items-center';
+      div.innerHTML = `<div><h3 class="font-bold">${preset.name}</h3><p class="text-sm text-gray-400">Port: ${preset.bind_port}</p></div><button class="btn-danger px-3 py-1 rounded-md text-sm" onclick="deleteServerPreset('${name}')">Delete</button>`;
+      serverPresetList.appendChild(div);
+    }
+  }
+  
+  async function deleteServerPreset(name) {
+    if (!confirm(`Delete server preset "${name}"?`)) return;
+    await fetch('/api/presets/server/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+    loadServerPresets();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // --- Client Setup Preset Loader ---
+    const clientPresetSelector = document.getElementById('client-preset-selector');
+    const clientForm = document.getElementById('client-form');
+    let clientPresets = {};
+    fetch('/api/presets').then(res => res.json()).then(data => {
+      clientPresets = data;
+      clientPresetSelector.innerHTML = '<option value="">-- Select a Preset --</option>'; // Clear previous
+      Object.keys(clientPresets).forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        clientPresetSelector.appendChild(option);
+      });
+    });
+    clientPresetSelector.addEventListener('change', (event) => {
+      const selectedName = event.target.value;
+      if (selectedName && clientPresets[selectedName]) {
+        const preset = clientPresets[selectedName];
+        clientForm.elements.server_ip.value = preset.server_ip;
+        clientForm.elements.server_port.value = preset.server_port;
+        clientForm.elements.auth_token.value = preset.auth_token;
+        clientForm.elements.transport.value = preset.transport;
+        clientForm.elements.use_mux.value = preset.use_mux ? 'true' : 'false';
+      }
+    });
+
+    // --- Server Setup Preset Loader ---
+    const serverPresetSelector = document.getElementById('server-preset-selector');
+    const serverForm = document.getElementById('server-form');
+    let serverPresets = {};
+    fetch('/api/presets/server').then(res => res.json()).then(data => {
+      serverPresets = data;
+      serverPresetSelector.innerHTML = '<option value="">-- Select a Preset --</option>'; // Clear previous
+      Object.keys(serverPresets).forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        serverPresetSelector.appendChild(option);
+      });
+    });
+    serverPresetSelector.addEventListener('change', (event) => {
+      const selectedName = event.target.value;
+      if (selectedName && serverPresets[selectedName]) {
+        const preset = serverPresets[selectedName];
+        serverForm.elements.bind_port.value = preset.bind_port;
+        serverForm.elements.proto_choice.value = preset.proto_choice;
+        serverForm.elements.use_mux.value = preset.use_mux ? 'true' : 'false';
+        serverForm.elements.token.value = preset.token;
+      }
+    });
+
+    // --- Client Presets Management ---
+    const clientPresetMgmtForm = document.getElementById('client-preset-form');
+    clientPresetMgmtForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(clientPresetMgmtForm);
+      const data = { name: formData.get('name'), server_ip: formData.get('server_ip'), server_port: formData.get('server_port'), auth_token: formData.get('auth_token'), transport: formData.get('transport'), use_mux: formData.get('use_mux') === 'true' };
+      await fetch('/api/presets/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      clientPresetMgmtForm.reset();
+      loadClientPresets();
+    });
+
+    // --- Server Presets Management ---
+    const serverPresetMgmtForm = document.getElementById('server-preset-form');
+    serverPresetMgmtForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(serverPresetMgmtForm);
+      const data = { name: formData.get('name'), bind_port: formData.get('bind_port'), proto_choice: formData.get('proto_choice'), token: formData.get('token'), use_mux: formData.get('use_mux') === 'true' };
+      await fetch('/api/presets/server/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      serverPresetMgmtForm.reset();
+      loadServerPresets();
+    });
+    
+    // --- Initial Load for Preset Management Tab ---
+    loadClientPresets();
+    loadServerPresets();
+
+    // --- System Management ---
+    const installBtn = document.getElementById('install-btn');
+    const uninstallBtn = document.getElementById('uninstall-btn');
+    const statusDiv = document.getElementById('system-status');
+
+    installBtn.addEventListener('click', async () => {
+      installBtn.disabled = true;
+      installBtn.textContent = 'Installing...';
+      statusDiv.classList.remove('hidden');
+      statusDiv.className = 'mt-6 p-4 rounded-lg bg-slate-800 border border-slate-700 text-sm';
+      statusDiv.textContent = 'Starting installation. This may take a moment...';
+
+      try {
+        const response = await fetch('/install', { method: 'POST' });
+        const text = await response.text();
+        if (response.ok) {
+          statusDiv.textContent = `Success: ${text}`;
+          statusDiv.className = 'mt-6 p-4 rounded-lg bg-green-900 border border-green-700 text-sm';
+        } else {
+          throw new Error(text || 'Installation failed with no message.');
+        }
+      } catch (error) {
+        statusDiv.textContent = `Error: ${error.message}`;
+        statusDiv.className = 'mt-6 p-4 rounded-lg bg-red-900 border border-red-700 text-sm';
+      } finally {
+        installBtn.disabled = false;
+        installBtn.textContent = 'Install/Update FRP';
+      }
+    });
+
+    uninstallBtn.addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to completely uninstall FRP? This will delete all your configurations and cannot be undone.')) {
+        return;
+      }
+      
+      uninstallBtn.disabled = true;
+      uninstallBtn.textContent = 'Uninstalling...';
+      statusDiv.classList.remove('hidden');
+      statusDiv.className = 'mt-6 p-4 rounded-lg bg-slate-800 border border-slate-700 text-sm';
+      statusDiv.textContent = 'Starting uninstallation...';
+      
+      try {
+        const response = await fetch('/remove', { method: 'POST' });
+        const text = await response.text();
+        if (response.ok) {
+          statusDiv.textContent = `Success: ${text}`;
+          statusDiv.className = 'mt-6 p-4 rounded-lg bg-green-900 border border-green-700 text-sm';
+        } else {
+          throw new Error(text || 'Uninstallation failed with no message.');
+        }
+      } catch (error) {
+         statusDiv.textContent = `Error: ${error.message}`;
+         statusDiv.className = 'mt-6 p-4 rounded-lg bg-red-900 border border-red-700 text-sm';
+      } finally {
+        uninstallBtn.disabled = false;
+        uninstallBtn.textContent = 'Uninstall FRP';
+      }
+    });
+  });
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('floating-icons-container');
+    if (container) {
+      const techEmojis = ['💻', '🖥️', '💾', '💿', '🔌', '📡', '🛰️', '🚀', '⚙️', '🔧', '🔬', '💡', '📈', '📊', '🔗', '🌐', '☁️', '⚡️', '🤖', '👾', '📱', '⌨️', '🖱️', '🔋', '🧠'];
+      const iconCount = 6; // As per the CSS
+      let iconsHtml = '';
+      for (let i = 0; i < iconCount; i++) {
+        const randomEmoji = techEmojis[Math.floor(Math.random() * techEmojis.length)];
+        iconsHtml += `<div class="floating-icon">${randomEmoji}</div>`;
+      }
+      container.innerHTML = iconsHtml;
+    }
+  });
+</script>
+</body>
+</html>
