@@ -44,17 +44,17 @@
   <div class="content-wrapper">
     <div class="flex">
       {{template "sidebar.html" .}}
-      <main class="flex-1 p-8">
+      <main class="flex-1 p-4 md:p-8">
         <div class="max-w-4xl mx-auto">
           <h1 class="text-2xl font-semibold text-gray-100 mb-6">Setup & Presets</h1>
 
           <!-- Main Tabs -->
           <div class="mb-4 border-b border-gray-700">
-            <nav class="-mb-px flex space-x-4" aria-label="Tabs">
-              <button id="main-tab-setup-client" onclick="switchMainTab('setup-client')" class="main-tab active">Setup Client</button>
-              <button id="main-tab-setup-server" onclick="switchMainTab('setup-server')" class="main-tab">Setup Server</button>
-              <button id="main-tab-presets" onclick="switchMainTab('presets')" class="main-tab">Manage Presets</button>
-              <button id="main-tab-system" onclick="switchMainTab('system')" class="main-tab">System Management</button>
+            <nav class="-mb-px flex space-x-4 overflow-x-auto pb-2" aria-label="Tabs">
+              <button id="main-tab-setup-client" onclick="switchMainTab('setup-client')" class="main-tab active whitespace-nowrap">Setup Client</button>
+              <button id="main-tab-setup-server" onclick="switchMainTab('setup-server')" class="main-tab whitespace-nowrap">Setup Server</button>
+              <button id="main-tab-presets" onclick="switchMainTab('presets')" class="main-tab whitespace-nowrap">Manage Presets</button>
+              <button id="main-tab-system" onclick="switchMainTab('system')" class="main-tab whitespace-nowrap">System Management</button>
             </nav>
           </div>
 
@@ -77,7 +77,7 @@
                 <div><label class="form-label block text-sm font-medium">Transport</label><select name="transport" class="form-select w-full"><option value="tcp" selected>TCP</option><option value="websocket">Websocket</option><option value="quic">QUIC</option><option value="kcp">KCP</option></select></div>
                 <div><label class="form-label block text-sm font-medium">Enable TCP Mux</label><select name="use_mux" class="form-select w-full"><option value="false" selected>No</option><option value="true">Yes</option></select></div>
                 <div><label class="form-label block text-sm font-medium">Local Ports (e.g., 22,6000-6006,6007)</label><input type="text" name="port_input" required class="form-control w-full"></div>
-                <div class="flex space-x-3 pt-4">
+                <div class="flex flex-col sm:flex-row gap-3 pt-4">
                   <button type="submit" class="btn-primary w-full px-4 py-3 rounded-lg text-white font-medium">Setup Client</button>
                   <a href="/" class="btn-secondary w-full px-4 py-3 rounded-lg text-gray-200 text-center">Back</a>
                 </div>
@@ -102,7 +102,7 @@
                 <div><label class="form-label block text-sm font-medium">Protocol</label><select name="proto_choice" class="form-select w-full"><option value="1">None</option><option value="2" selected>QUIC</option><option value="3">KCP</option></select></div>
                 <div><label class="form-label block text-sm font-medium">Enable TCP Mux</label><select name="use_mux" class="form-select w-full"><option value="false" selected>No</option><option value="true">Yes</option></select></div>
                 <div><label class="form-label block text-sm font-medium">Auth Token</label><input type="text" name="token" value="mikeesierrah" class="form-control w-full"></div>
-                <div class="flex space-x-3 pt-4">
+                <div class="flex flex-col sm:flex-row gap-3 pt-4">
                   <button type="submit" class="btn-primary w-full px-4 py-3 rounded-lg text-white font-medium">Setup Server</button>
                   <a href="/" class="btn-secondary w-full px-4 py-3 rounded-lg text-gray-200 text-center">Back</a>
                 </div>

@@ -50,7 +50,7 @@
   <div class="content-wrapper">
     <div class="flex">
       {{template "sidebar.html" .}}
-      <main class="flex-1 p-8">
+      <main class="flex-1 p-4 md:p-8">
         <div class="max-w-4xl mx-auto">
           <h1 class="text-2xl font-semibold text-gray-100 mb-4">Manage FRP</h1>
 
@@ -64,7 +64,7 @@
 
           <!-- Main Content: Clients -->
           <div id="main-content-clients" class="tab-content">
-            <div class="flex space-x-3 mb-6">
+            <div class="flex flex-wrap gap-2 mb-6">
               <a href="/client/start_all" class="btn-success px-4 py-2 rounded-lg text-white font-medium">Start All</a>
               <a href="/client/stop_all" class="btn-danger px-4 py-2 rounded-lg text-white font-medium">Stop All</a>
               <a href="/client/restart_all" class="btn-warning px-4 py-2 rounded-lg text-white font-medium">Restart All</a>
@@ -81,15 +81,15 @@
               <div id="content-client-{{ $client }}" class="inner-tab-content client-tab-content {{ if ne $index 0 }}hidden{{ end }}">
                 <div class="card rounded-xl p-6 shadow-lg">
                   <h5 class="text-lg font-semibold text-gray-100 mb-3">{{ $client }}</h5>
-                  <div class="flex space-x-3 mb-3">
+                  <div class="flex flex-wrap gap-2 mb-3">
                     <a href="/client/start/{{ $client }}" class="btn-success px-4 py-2 rounded-lg text-white font-medium">Start</a>
                     <a href="/client/stop/{{ $client }}" class="btn-danger px-4 py-2 rounded-lg text-white font-medium">Stop</a>
                     <a href="/client/restart/{{ $client }}" class="btn-warning px-4 py-2 rounded-lg text-white font-medium">Restart</a>
                     <a href="/client/edit/{{ $client }}" class="btn-primary px-4 py-2 rounded-lg text-white font-medium">Edit Config</a>
                   </div>
                   <h6 class="text-sm font-medium text-gray-400 mt-3">Live Logs</h6>
-                  <div class="flex items-center space-x-2 my-2">
-                    <input type="text" placeholder="Search logs..." oninput="applyFilters('client', '{{ $client }}')" id="search-client-{{ $client }}" class="form-control w-full px-2 py-1 rounded-md text-sm">
+                  <div class="flex flex-col md:flex-row md:items-center gap-3 my-3">
+                    <input type="text" placeholder="Search logs..." oninput="applyFilters('client', '{{ $client }}')" id="search-client-{{ $client }}" class="form-control w-full md:flex-1 px-2 py-1 rounded-md text-sm">
                     <div class="flex-shrink-0 space-x-1">
                       <button onclick="applyFilters('client', '{{ $client }}', 'all', this)" class="log-filter-btn active px-2 py-1 text-xs rounded-md">All</button>
                       <button onclick="applyFilters('client', '{{ $client }}', '[I]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">INFO</button>
@@ -108,7 +108,7 @@
 
           <!-- Main Content: Servers -->
           <div id="main-content-servers" class="tab-content hidden">
-            <div class="flex space-x-3 mb-6">
+            <div class="flex flex-wrap gap-2 mb-6">
               <a href="/server/start_all" class="btn-success px-4 py-2 rounded-lg text-white font-medium">Start All</a>
               <a href="/server/stop_all" class="btn-danger px-4 py-2 rounded-lg text-white font-medium">Stop All</a>
               <a href="/server/restart_all" class="btn-warning px-4 py-2 rounded-lg text-white font-medium">Restart All</a>
@@ -125,15 +125,15 @@
               <div id="content-server-{{ $server }}" class="inner-tab-content server-tab-content {{ if ne $index 0 }}hidden{{ end }}">
                 <div class="card rounded-xl p-6 mb-4 shadow-lg">
                   <h5 class="text-lg font-semibold text-gray-100 mb-3">{{ $server }}</h5>
-                  <div class="flex space-x-3 mb-3">
+                  <div class="flex flex-wrap gap-2 mb-3">
                     <a href="/server/start/{{ $server }}" class="btn-success px-4 py-2 rounded-lg text-white font-medium">Start</a>
                     <a href="/server/stop/{{ $server }}" class="btn-danger px-4 py-2 rounded-lg text-white font-medium">Stop</a>
                     <a href="/server/restart/{{ $server }}" class="btn-warning px-4 py-2 rounded-lg text-white font-medium">Restart</a>
                     <a href="/server/edit/{{ $server }}" class="btn-primary px-4 py-2 rounded-lg text-white font-medium">Edit Config</a>
                   </div>
                   <h6 class="text-sm font-medium text-gray-400 mt-3">Live Logs</h6>
-                  <div class="flex items-center space-x-2 my-2">
-                    <input type="text" placeholder="Search logs..." oninput="applyFilters('server', '{{ $server }}')" id="search-server-{{ $server }}" class="form-control w-full px-2 py-1 rounded-md text-sm">
+                  <div class="flex flex-col md:flex-row md:items-center gap-3 my-3">
+                    <input type="text" placeholder="Search logs..." oninput="applyFilters('server', '{{ $server }}')" id="search-server-{{ $server }}" class="form-control w-full md:flex-1 px-2 py-1 rounded-md text-sm">
                     <div class="flex-shrink-0 space-x-1">
                       <button onclick="applyFilters('server', '{{ $server }}', 'all', this)" class="log-filter-btn active px-2 py-1 text-xs rounded-md">All</button>
                       <button onclick="applyFilters('server', '{{ $server }}', '[I]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">INFO</button>
