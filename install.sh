@@ -1,11 +1,17 @@
 #!/bin/bash
 echo "Installing FRP Web-UI" && 
-mkdir -p /root/frp && 
+mkdir -p /root/frp/Source /root/frp/templates && 
 cd /root/frp && 
-wget -O frp-ui https://raw.githubusercontent.com/md9786/FRP-Management-Webui/refs/heads/main/frp_ui && 
-chmod +x frp-ui && 
-wget -O EFRP.sh https://raw.githubusercontent.com/md9786/FRP-Management-Webui/main/Source/EFRP.sh && 
-chmod +x EFRP.sh && 
+git clone https://github.com/md9786/FRP-Management-Webui.git && 
+cd FRP-Management-Webui && 
+git checkout 8d7019f96cf26a0079700a96171b539453533ff7 && 
+cp frp_ui /root/frp/ && 
+cp Source/EFRP.sh /root/frp/Source/ && 
+cp -r Source/templates/* /root/frp/templates/ && 
+cd .. && 
+rm -rf FRP-Management-Webui && 
+chmod +x /root/frp/frp-ui && 
+chmod +x /root/frp/EFRP.sh && 
 echo "[Unit]
 Description=FRP Web UI
 After=network.target
@@ -17,10 +23,7 @@ ExecStart=/root/frp/frp-ui
 Restart=always
 
 [Install]
-WantedBy=multi-user.target" > /etc/systemd/system/frp_ui.service && 
-echo "[Unit]
-Description=FRP Services Monitor 
-After=network.target frpc@client-42420.service frpc@client-42421.service frpc@client-42422.service frpc@client-42423.service frpc@client-42424.service
+WantedBy=multi-user.target
 
 [Service]
 ExecStart=/root/frp/EFRP.sh
@@ -37,4 +40,4 @@ systemctl start frp_ui.service &&
 systemctl enable EFRP.service && 
 systemctl start EFRP.service && 
 ip=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v "127.0.0.1" | head -n 1) && 
-echo "FRP Web-UI installed, you can access it using http://$ip:5000"
+echo "FRP Web-UI installed, you can access it using http://$ip:5000
