@@ -184,7 +184,7 @@ wget -qO- https://raw.githubusercontent.com/md9786/FRP-Management-Webui/main/ins
 -   رمز عبور جدید / تأیید رمز عبور جدید: رمز عبور جدید را در اینجا وارد کنید. برای حفظ رمز فعلی خالی بگذارید.
 -   ذخیره تغییرات: پس از ذخیره، شما از سیستم خارج شده و به صفحه ورود هدایت می‌شوید تا با اطلاعات جدید وارد شوید.
 
-**جایگاه اسکرین‌شات:**
+
 ![صفحه تنظیمات](https://github.com/md9786/FRP-Management-Webui/blob/main/screenshots/settings.png?raw=true "فرم تنظیمات کاربر و تغییر رمز عبور.")
 
 ---
