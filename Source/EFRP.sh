@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # --- Configuration ---
-SERVICE_PREFIX="frpc@client"
 CONFIG_DIR="/root/frp/client" # Directory containing FRP client configuration files
 ERROR_STRING="connect to server error: timeout" # Partial string to look for in logs
 LOG_FILE="/var/log/frp_monitor.log" # Log file for this script's actions
@@ -21,17 +20,17 @@ log_message() {
 # Function to restart a specific FRP service
 restart_frp_service() {
     local service_name="$1"
-    log_message "Initiating restart of $service_name."
+    log_message "Initiating restart of frpc@$service_name.service."
 
     # Restart the FRP service
-    log_message "Restarting $service_name."
-    sudo systemctl restart "$service_name"
+    log_message "Restarting frpc@$service_name.service."
+    sudo systemctl restart "frpc@$service_name.service"
     if [ $? -eq 0 ]; then
-        log_message "$service_name restarted successfully."
+        log_message "frpc@$service_name.service restarted successfully."
         sleep "$RESTART_STABILIZE_SLEEP" # Give service time to start and log
         return 0 # Success
     else
-        log_message "Failed to restart $service_name. Check systemctl status. Error code: $?."
+        log_message "Failed to restart frpc@$service_name.service. Check systemctl status. Error code: $?."
         return 1 # Failure
     fi
 }
@@ -62,7 +61,7 @@ for config_file in "$CONFIG_DIR"/*.toml; do
         exit 1
     fi
     client_name=$(basename "$config_file" .toml)
-    service_name="$SERVICE_PREFIX-$client_name"
+    service_name="$client_name"
     restart_counts["$service_name"]=0
 done
 
@@ -80,10 +79,10 @@ while true; do
                 continue
             fi
             client_name=$(basename "$config_file" .toml)
-            service_name="$SERVICE_PREFIX-$client_name"
+            service_name="$client_name"
             restart_frp_service "$service_name"
             if [ $? -ne 0 ]; then
-                log_message "Scheduled restart failed for $service_name. Script will continue to monitor."
+                log_message "Scheduled restart failed for frpc@$service_name.service. Script will continue to monitor."
             fi
             restart_counts["$service_name"]=0 # Reset error-based restart count after a scheduled restart
         done
@@ -97,35 +96,34 @@ while true; do
             continue
         fi
         client_name=$(basename "$config_file" .toml)
-        service_name="$SERVICE_PREFIX-$client_name"
-        log_message "Checking for error string: '$ERROR_STRING' in $service_name logs..."
+        service_name="$client_name"
+        log_message "Checking for error string: '$ERROR_STRING' in frpc@$service_name.service logs..."
 
         # Use journalctl to get the last few lines of the service log
-        if journalctl -u "$service_name" --no-pager -n 3 | grep -q "$ERROR_STRING"; then
-            log_message "ERROR '$ERROR_STRING' DETECTED in $service_name logs!"
+        if journalctl -u "frpc@$service_name.service" --no-pager -n 3 | grep -q "$ERROR_STRING"; then
+            log_message "ERROR '$ERROR_STRING' DETECTED in frpc@$service_name.service logs!"
 
             if [ "${restart_counts["$service_name"]}" -gt "$MAX_RESTARTS_IN_ROW" ]; then
-                log_message "Maximum consecutive error-based restarts ($MAX_RESTARTS_IN_ROW) reached for $service_name. Waiting $RESTART_WAIT_SECONDS seconds before retrying."
+                log_message "Maximum consecutive error-based restarts ($MAX_RESTARTS_IN_ROW) reached for frpc@$service_name.service. Waiting $RESTART_WAIT_SECONDS seconds before retrying."
                 sleep "$RESTART_WAIT_SECONDS"
                 restart_counts["$service_name"]=0 # Reset restart count to allow retry
             fi
 
             restart_counts["$service_name"]=$((restart_counts["$service_name"] + 1))
-            log_message "Error-based restart attempt #${restart_counts["$service_name"]} for $service_name."
+            log_message "Error-based restart attempt #${restart_counts["$service_name"]} for frpc@$service_name.service."
 
             # Call the restart function
             restart_frp_service "$service_name"
             if [ $? -ne 0 ]; then
-                log_message "Error-based restart failed for $service_name. Continuing to monitor other services."
+                log_message "Error-based restart failed for frpc@$service_name.service. Continuing to monitor other services."
             fi
-
         else
             # If no error detected, reset the error-based restart counter for this service
             if [ "${restart_counts["$service_name"]}" -gt 0 ]; then
-                log_message "No error detected in the last check for $service_name. Resetting consecutive error-based restart count."
+                log_message "No error detected in the last check for frpc@$service_name.service. Resetting consecutive error-based restart count."
             fi
             restart_counts["$service_name"]=0
-            log_message "No error detected. $service_name appears to be running normally."
+            log_message "No error detected. frpc@$service_name.service appears to be running normally."
         fi
     done
 
