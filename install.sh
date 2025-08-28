@@ -5,7 +5,7 @@ set -x  # Enable debug output
 echo "Installing FRP Web-UI"
 
 # Create directories
-mkdir -p /root/frp/Source /root/frp/templates || { echo "Failed to create directories"; exit 1; }
+mkdir -p  /root/frp/frp-ui/templates || { echo "Failed to create directories"; exit 1; }
 cd /root/frp || { echo "Failed to change to /root/frp"; exit 1; }
 
 # Clone repository
@@ -17,17 +17,17 @@ fi
 cd FRP-Management-Webui || { echo "Failed to change to FRP-Management-Webui"; exit 1; }
 
 # Copy files
-cp frp-ui /root/frp/ || { echo "Failed to copy frp-ui"; exit 1; }
-cp Source/EFRP.sh /root/frp/ || { echo "Failed to copy EFRP.sh"; exit 1; }
-cp -r Source/templates/* /root/frp/templates/ || { echo "Failed to copy templates"; exit 1; }
+cp frp-ui /root/frp/frp-ui/ || { echo "Failed to copy frp-ui"; exit 1; }
+cp Source/EFRP.sh /root/frp/frp-ui/ || { echo "Failed to copy EFRP.sh"; exit 1; }
+cp -r Source/templates/* /root/frp/frp-ui/templates/ || { echo "Failed to copy templates"; exit 1; }
 
 # Clean up
 cd .. || { echo "Failed to change directory"; exit 1; }
 rm -rf FRP-Management-Webui || { echo "Failed to remove source folder"; exit 1; }
 
 # Set permissions
-chmod +x /root/frp/frp-ui || { echo "Failed to set permissions for frp-ui"; exit 1; }
-chmod +x /root/frp/EFRP.sh || { echo "Failed to set permissions for EFRP.sh"; exit 1; }
+chmod +x /root/frp/frp-ui/frp-ui || { echo "Failed to set permissions for frp-ui"; exit 1; }
+chmod +x /root/frp/frp-ui/EFRP.sh || { echo "Failed to set permissions for EFRP.sh"; exit 1; }
 
 # Create systemd files
 cat > /etc/systemd/system/frp-ui.service << EOF || { echo "Failed to create frp-ui.service"; exit 1; }
@@ -37,8 +37,8 @@ After=network.target
 
 [Service]
 User=root
-WorkingDirectory=/root/frp
-ExecStart=/root/frp/frp-ui
+WorkingDirectory=/root/frp/frp-ui/
+ExecStart=/root/frp/frp-ui/frp-ui
 Restart=always
 
 [Install]
@@ -52,8 +52,8 @@ After=network.target
 
 [Service]
 User=root
-WorkingDirectory=/root/frp
-ExecStart=/root/frp/EFRP.sh
+WorkingDirectory=/root/frp/frp-ui/
+ExecStart=/root/frp/frp-ui/EFRP.sh
 Restart=always
 
 [Install]
