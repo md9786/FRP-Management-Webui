@@ -2,15 +2,13 @@
 
 # --- Configuration ---
 CONFIG_DIR="/root/frp/client" # Directory containing FRP client configuration files
-ERROR_STRING="connect to server error: timeout" # Partial string to look for in logs
+ERROR_STRING="connect to server error: timeout|connect to local service error: dial tcp" # Partial string to look for in logs
 LOG_FILE="/var/log/frp_monitor.log" # Log file for this script's actions
 MAX_RESTARTS_IN_ROW=3 # Maximum consecutive restarts per service before waiting
 CHECK_INTERVAL_SECONDS=10 # How often to check logs for errors (in seconds)
 SCHEDULED_RESTART_INTERVAL_MINUTES=20 # How often to perform a scheduled restart (in minutes)
 RESTART_STABILIZE_SLEEP=3 # Time to wait after a restart for service to stabilize
-RESTART_WAIT_SECONDS=10 # Time to wait after reaching max restarts before trying again
-
-# --- Functions ---
+RESTART_WAIT_SECONDS=10 # Time to wait after reaching max restarts before trying again# --- Functions ---
 
 # Function to log messages with a timestamp
 log_message() {
@@ -86,8 +84,7 @@ while true; do
             fi
             restart_counts["$service_name"]=0 # Reset error-based restart count after a scheduled restart
         done
-        last_scheduled_restart_time=$current_time # Update last scheduled restart time
-    fi
+        last_scheduled_restart_time=$current_time # Update last scheduled restart time    fi
 
     # Check each service for errors
     for config_file in "$CONFIG_DIR"/*.toml; do
@@ -100,14 +97,13 @@ while true; do
         log_message "Checking for error string: '$ERROR_STRING' in frpc@$service_name.service logs..."
 
         # Use journalctl to get the last few lines of the service log
-        if journalctl -u "frpc@$service_name.service" --no-pager -n 3 | grep -q "$ERROR_STRING"; then
+        if journalctl -u "frpc@$service_name.service" --no-pager -n 3 | grep -E "$ERROR_STRING"; then
             log_message "ERROR '$ERROR_STRING' DETECTED in frpc@$service_name.service logs!"
 
-            if [ "${restart_counts["$service_name"]}" -gt "$MAX_RESTARTS_IN_ROW" ]; then
+            if [ "${restart_counts["$service_name"]}" -ge "$MAX_RESTARTS_IN_ROW" ]; then
                 log_message "Maximum consecutive error-based restarts ($MAX_RESTARTS_IN_ROW) reached for frpc@$service_name.service. Waiting $RESTART_WAIT_SECONDS seconds before retrying."
                 sleep "$RESTART_WAIT_SECONDS"
-                restart_counts["$service_name"]=0 # Reset restart count to allow retry
-            fi
+                restart_counts["$service_name"]=0 # Reset restart count to allow retry            fi
 
             restart_counts["$service_name"]=$((restart_counts["$service_name"] + 1))
             log_message "Error-based restart attempt #${restart_counts["$service_name"]} for frpc@$service_name.service."
