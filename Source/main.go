@@ -1,15 +1,12 @@
 package main
 
 import (
-	"archive/tar"
 	"bufio"
-	"compress/gzip"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -96,12 +93,12 @@ type ConnectionStatus struct {
 // --- Global Variables ---
 
 var (
-	lastNetStats map[string]net.IOCountersStat
-	lastNetTime  time.Time
-	sessions     = make(map[string]Session)
-	users        map[string]User
-	usersMutex   sync.RWMutex
-	upgrader     = websocket.Upgrader{
+	lastNetStats       map[string]net.IOCountersStat
+	lastNetTime        time.Time
+	sessions           = make(map[string]Session)
+	users              map[string]User
+	usersMutex         sync.RWMutex
+	upgrader           = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
 			return true // Allow all origins for simplicity
 		},
@@ -833,6 +830,7 @@ func getSystemInfo() (*SystemInfo, error) {
 	}, nil
 }
 
+
 // --- Route Handlers ---
 
 func home(c *gin.Context) {
@@ -844,64 +842,72 @@ func home(c *gin.Context) {
 
 func installFRP(c *gin.Context) {
 	optimize()
+
+	// --- Detect platform ---
 	arch := runtime.GOARCH
-	if arch == "amd64" || arch == "arm64" {
-		// ok
-	} else if arch == "arm" || arch == "armv7l" || arch == "armv6l" {
+	// The runtime.GOARCH values (amd64, arm64) match the FRP release asset names.
+	// The bash script needs to translate from `uname -m` (x86_64, aarch64),
+	// but Go gives us the correct names directly. We just need to handle arm variants.
+	if strings.HasPrefix(arch, "armv") {
 		arch = "arm"
-	} else {
-		c.String(http.StatusBadRequest, "Unsupported architecture")
-		return
 	}
 	osType := runtime.GOOS
+	platform := fmt.Sprintf("%s_%s", osType, arch)
+
+	// --- Get latest version (using robust JSON parsing) ---
+	log.Println("Fetching latest FRP version...")
 	resp, err := http.Get("https://api.github.com/repos/fatedier/frp/releases/latest")
 	if err != nil {
-		c.String(http.StatusInternalServerError, err.Error())
+		c.String(http.StatusInternalServerError, "Failed to fetch latest version info: "+err.Error())
 		return
 	}
 	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
-	version := strings.TrimPrefix(strings.Split(string(body), `"tag_name":"`)[1], "v")
-	version = strings.Split(version, `"`)[0]
-	url := fmt.Sprintf("https://github.com/fatedier/frp/releases/download/v%s/frp_%s_%s_%s.tar.gz", version, version, osType, arch)
-	resp, err = http.Get(url)
-	if err != nil {
-		c.String(http.StatusInternalServerError, err.Error())
+	var releaseInfo struct {
+		TagName string `json:"tag_name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&releaseInfo); err != nil {
+		c.String(http.StatusInternalServerError, "Failed to parse release info: "+err.Error())
 		return
 	}
-	defer resp.Body.Close()
-	file, _ := ioutil.TempFile("", "frp.tar.gz")
-	io.Copy(file, resp.Body)
-	file.Close()
-
-	gz, _ := os.Open(file.Name())
-	defer gz.Close()
-	gr, _ := gzip.NewReader(gz)
-	tr := tar.NewReader(gr)
-	for {
-		hdr, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if strings.HasSuffix(hdr.Name, "/frpc") || strings.Contains(hdr.Name, "/frpc") {
-			out, _ := os.Create("/usr/local/bin/frpc")
-			io.Copy(out, tr)
-			out.Close()
-			os.Chmod("/usr/local/bin/frpc", 0755)
-		} else if strings.HasSuffix(hdr.Name, "/frps") || strings.Contains(hdr.Name, "/frps") {
-			out, _ := os.Create("/usr/local/bin/frps")
-			io.Copy(out, tr)
-			out.Close()
-			os.Chmod("/usr/local/bin/frps", 0755)
-		}
+	version := strings.TrimPrefix(releaseInfo.TagName, "v")
+	if version == "" {
+		c.String(http.StatusInternalServerError, "Could not determine latest FRP version.")
+		return
 	}
 
-	os.MkdirAll(ClientConfigDir, 0755)
-	os.MkdirAll(ServerConfigDir, 0755)
-	os.MkdirAll(filepath.Dir(PresetsFile), 0755) // Ensure presets directory exists
+	// --- Download ---
+	downloadURL := fmt.Sprintf("https://github.com/fatedier/frp/releases/download/v%s/frp_%s_%s.tar.gz", version, version, platform)
+	log.Println("Downloading", downloadURL)
+	if out, err := exec.Command("curl", "-L", downloadURL, "-o", "/tmp/frp.tar.gz").CombinedOutput(); err != nil {
+		log.Printf("curl failed: %s\nOutput: %s", err, string(out))
+		c.String(http.StatusInternalServerError, "Failed to download FRP: "+string(out))
+		return
+	}
 
-	ioutil.WriteFile("/etc/systemd/system/frps@.service", []byte(`
-[Unit]
+	// --- Extract ---
+	log.Println("Extracting...")
+	if out, err := exec.Command("tar", "-xzf", "/tmp/frp.tar.gz", "-C", "/tmp").CombinedOutput(); err != nil {
+		log.Printf("tar failed: %s\nOutput: %s", err, string(out))
+		c.String(http.StatusInternalServerError, "Failed to extract FRP archive: "+string(out))
+		return
+	}
+
+	// --- Install frpc and frps ---
+	frpDir := fmt.Sprintf("/tmp/frp_%s_%s", version, platform)
+	log.Println("Installing frpc and frps...")
+	runCmd("cp", filepath.Join(frpDir, "frpc"), "/usr/local/bin/")
+	runCmd("cp", filepath.Join(frpDir, "frps"), "/usr/local/bin/")
+	runCmd("chmod", "+x", "/usr/local/bin/frpc", "/usr/local/bin/frps")
+
+	// --- Create config folders ---
+	log.Println("Creating config folders...")
+	runCmd("mkdir", "-p", ServerConfigDir)
+	runCmd("mkdir", "-p", ClientConfigDir)
+	runCmd("mkdir", "-p", filepath.Dir(PresetsFile)) // Ensure presets directory also exists
+
+	// --- Writing systemd service files ---
+	log.Println("Writing systemd service files...")
+	frpsServiceContent := `[Unit]
 Description=FRP Server Service (%i)
 Documentation=https://gofrp.org/en/docs/overview/
 After=network.target nss-lookup.target network-online.target
@@ -916,11 +922,10 @@ RestartSec=10s
 LimitNOFILE=infinity
 
 [Install]
-WantedBy=multi-user.target
-`), 0644)
+WantedBy=multi-user.target`
+	ioutil.WriteFile("/etc/systemd/system/frps@.service", []byte(frpsServiceContent), 0644)
 
-	ioutil.WriteFile("/etc/systemd/system/frpc@.service", []byte(`
-[Unit]
+	frpcServiceContent := `[Unit]
 Description=FRP Client Service (%i)
 Documentation=https://gofrp.org/en/docs/overview/
 After=network.target nss-lookup.target network-online.target
@@ -935,12 +940,21 @@ RestartSec=10s
 LimitNOFILE=infinity
 
 [Install]
-WantedBy=multi-user.target
-`), 0644)
+WantedBy=multi-user.target`
+	ioutil.WriteFile("/etc/systemd/system/frpc@.service", []byte(frpcServiceContent), 0644)
 
+	// --- Reloading systemd ---
+	log.Println("Reloading systemd daemon...")
 	runCmd("systemctl", "daemon-reload")
-	c.String(http.StatusOK, "FRP installed successfully")
+
+	// --- Cleanup ---
+	log.Println("Cleaning up temporary files...")
+	os.Remove("/tmp/frp.tar.gz")
+	os.RemoveAll(frpDir)
+
+	c.String(http.StatusOK, "FRP v"+version+" installed successfully")
 }
+
 
 func setupServer(c *gin.Context) {
 	serverFormName := c.PostForm("server_name")
@@ -1411,29 +1425,66 @@ func removeForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "remove.html", nil)
 }
 
+// getServices discovers systemd services based on a command and a name prefix.
+func getServices(listCommand []string, pattern string) []string {
+	var services []string
+	output := runCmdOutput(listCommand...)
+	scanner := bufio.NewScanner(strings.NewReader(output))
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Fields(line)
+		if len(fields) > 0 && strings.HasPrefix(fields[0], pattern) {
+			services = append(services, fields[0])
+		}
+	}
+	return services
+}
+
 func removeFRP(c *gin.Context) {
-	running := runCmdOutput("systemctl", "list-units", "--type=service", "--state=running")
-	for _, line := range strings.Split(running, "\n") {
-		if strings.Contains(line, "frps@") || strings.Contains(line, "frpc@") {
-			service := strings.Fields(line)[0]
-			runCmd("systemctl", "stop", service)
-		}
+	log.Println("Stopping all FRP services...")
+	// Stop running frps services
+	runningServers := getServices([]string{"systemctl", "list-units", "--type=service", "--state=running", "--no-pager", "--plain"}, "frps@")
+	for _, service := range runningServers {
+		log.Println("Stopping", service)
+		runCmd("systemctl", "stop", service)
 	}
-	enabled := runCmdOutput("systemctl", "list-unit-files")
-	for _, line := range strings.Split(enabled, "\n") {
-		if strings.Contains(line, "frps@") || strings.Contains(line, "frpc@") {
-			service := strings.Fields(line)[0]
-			runCmd("systemctl", "disable", service)
-		}
+	// Stop running frpc services
+	runningClients := getServices([]string{"systemctl", "list-units", "--type=service", "--state=running", "--no-pager", "--plain"}, "frpc@")
+	for _, service := range runningClients {
+		log.Println("Stopping", service)
+		runCmd("systemctl", "stop", service)
 	}
+
+	log.Println("Disabling all FRP services...")
+	// Disable enabled frps services
+	enabledServers := getServices([]string{"systemctl", "list-unit-files", "--no-pager", "--plain"}, "frps@")
+	for _, service := range enabledServers {
+		log.Println("Disabling", service)
+		runCmd("systemctl", "disable", service)
+	}
+	// Disable enabled frpc services
+	enabledClients := getServices([]string{"systemctl", "list-unit-files", "--no-pager", "--plain"}, "frpc@")
+	for _, service := range enabledClients {
+		log.Println("Disabling", service)
+		runCmd("systemctl", "disable", service)
+	}
+
+	log.Println("Removing service files...")
 	os.Remove("/etc/systemd/system/frps@.service")
 	os.Remove("/etc/systemd/system/frpc@.service")
+
+	log.Println("Removing binaries...")
 	os.Remove("/usr/local/bin/frpc")
 	os.Remove("/usr/local/bin/frps")
+
+	log.Println("Removing configuration directories...")
 	os.RemoveAll("/root/frp/")
+
+	log.Println("Reloading systemd daemon...")
 	runCmd("systemctl", "daemon-reload")
-	c.String(http.StatusOK, "FRP removed successfully")
+	c.String(http.StatusOK, "FRP completely removed from system.")
 }
+
 
 // --- Utility Functions ---
 
