@@ -221,7 +221,13 @@
           <h1 class="text-2xl font-semibold text-gray-100 mb-6">Setup & Presets</h1>
 
           <!-- Main Tabs -->
-          <div class="mb-4 border-b border-gray-700">
+          <select id="main-tab-select" class="form-select mb-4 block md:hidden" onchange="switchMainTab(this.value)">
+            <option value="setup-client" selected>Setup Client</option>
+            <option value="setup-server">Setup Server</option>
+            <option value="presets">Manage Presets</option>
+            <option value="system">System Management</option>
+          </select>
+          <div class="mb-4 border-b border-gray-700 hidden md:block">
             <nav class="-mb-px flex space-x-4 overflow-x-auto pb-2" aria-label="Tabs">
               <button id="main-tab-setup-client" onclick="switchMainTab('setup-client')" class="main-tab active whitespace-nowrap">Setup Client</button>
               <button id="main-tab-setup-server" onclick="switchMainTab('setup-server')" class="main-tab whitespace-nowrap">Setup Server</button>
@@ -284,7 +290,11 @@
 
           <!-- Main Tab Content: Presets -->
           <div id="main-content-presets" class="main-tab-content hidden">
-            <div class="mb-4 border-b border-gray-700">
+            <select id="preset-tab-select" class="form-select mb-4 block md:hidden" onchange="switchPresetTab(this.value)">
+              <option value="client" selected>Client Presets</option>
+              <option value="server">Server Presets</option>
+            </select>
+            <div class="mb-4 border-b border-gray-700 hidden md:block">
               <nav class="-mb-px flex space-x-4" aria-label="Preset Tabs">
                 <button id="preset-tab-client" onclick="switchPresetTab('client')" class="preset-tab active">Client Presets</button>
                 <button id="preset-tab-server" onclick="switchPresetTab('server')" class="preset-tab">Server Presets</button>
@@ -363,6 +373,7 @@
     document.querySelectorAll('.main-tab').forEach(tab => tab.classList.remove('active'));
     document.getElementById(`main-content-${tabName}`).classList.remove('hidden');
     document.getElementById(`main-tab-${tabName}`).classList.add('active');
+    document.getElementById('main-tab-select').value = tabName;
   }
 
   function switchPresetTab(tabName) {
@@ -370,6 +381,8 @@
     document.querySelectorAll('.preset-tab').forEach(tab => tab.classList.remove('active'));
     document.getElementById(`preset-content-${tabName}`).classList.remove('hidden');
     document.getElementById(`preset-tab-${tabName}`).classList.add('active');
+    let select = document.getElementById('preset-tab-select');
+    if (select) select.value = tabName;
   }
 
   // --- Client Presets Management ---

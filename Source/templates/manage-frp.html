@@ -38,6 +38,7 @@
     color: #e2e8f0; 
     width: 100%; /* Ensure input fits container */
     box-sizing: border-box;
+    border-radius: 0.375rem; /* Rounded corners for dropdowns and inputs */
   }
   .log-filter-btn { 
     background-color: #334155; 
@@ -182,7 +183,11 @@
           <h1 class="text-2xl font-semibold text-gray-100 mb-4">Manage FRP</h1>
 
           <!-- Main Tabs -->
-          <div class="mb-4 border-b border-gray-700">
+          <select id="main-tab-select" class="form-control mb-4 block md:hidden" onchange="switchMainTab(this.value)">
+            <option value="clients" selected>Clients</option>
+            <option value="servers">Servers</option>
+          </select>
+          <div class="mb-4 border-b border-gray-700 hidden md:block">
               <nav class="-mb-px flex space-x-2 overflow-x-auto" aria-label="Tabs">
                   <button id="main-tab-clients" onclick="switchMainTab('clients')" class="tab active">Clients</button>
                   <button id="main-tab-servers" onclick="switchMainTab('servers')" class="tab">Servers</button>
@@ -197,7 +202,12 @@
               <a href="/client/restart_all" class="btn-warning px-4 py-2 rounded-lg text-white font-medium">Restart All</a>
             </div>
             {{ if .Clients }}
-              <div class="mb-4 border-b border-gray-700">
+              <select id="inner-client-select" class="form-control mb-4 block md:hidden" onchange="switchInnerTab('client', this.value)">
+                {{ range $index, $client := .Clients }}
+                  <option value="{{ $client }}" {{ if eq $index 0 }}selected{{ end }}>{{ $client }}</option>
+                {{ end }}
+              </select>
+              <div class="mb-4 border-b border-gray-700 hidden md:block">
                 <nav class="-mb-px flex space-x-2 overflow-x-auto" aria-label="Inner Tabs">
                   {{ range $index, $client := .Clients }}
                     <button id="tab-client-{{ $client }}" onclick="switchInnerTab('client', '{{ $client }}')" class="inner-tab client-tab whitespace-nowrap {{ if eq $index 0 }}active{{ end }}">{{ $client }}</button>
@@ -241,7 +251,12 @@
               <a href="/server/restart_all" class="btn-warning px-4 py-2 rounded-lg text-white font-medium">Restart All</a>
             </div>
             {{ if .Servers }}
-              <div class="mb-4 border-b border-gray-700">
+              <select id="inner-server-select" class="form-control mb-4 block md:hidden" onchange="switchInnerTab('server', this.value)">
+                {{ range $index, $server := .Servers }}
+                  <option value="{{ $server }}" {{ if eq $index 0 }}selected{{ end }}>{{ $server }}</option>
+                {{ end }}
+              </select>
+              <div class="mb-4 border-b border-gray-700 hidden md:block">
                 <nav class="-mb-px flex space-x-2 overflow-x-auto" aria-label="Inner Tabs">
                   {{ range $index, $server := .Servers }}
                     <button id="tab-server-{{ $server }}" onclick="switchInnerTab('server', '{{ $server }}')" class="inner-tab server-tab whitespace-nowrap {{ if eq $index 0 }}active{{ end }}">{{ $server }}</button>
@@ -292,6 +307,7 @@
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
       document.getElementById(`main-content-${tabName}`).classList.remove('hidden');
       document.getElementById(`main-tab-${tabName}`).classList.add('active');
+      document.getElementById('main-tab-select').value = tabName;
     }
 
     function switchInnerTab(prefix, tabName) {
@@ -299,6 +315,8 @@
       document.querySelectorAll(`.${prefix}-tab`).forEach(tab => tab.classList.remove('active'));
       document.getElementById(`content-${prefix}-${tabName}`).classList.remove('hidden');
       document.getElementById(`tab-${prefix}-${tabName}`).classList.add('active');
+      let select = document.getElementById(`inner-${prefix}-select`);
+      if (select) select.value = tabName;
     }
 
     function cleanLogLine(line) {
