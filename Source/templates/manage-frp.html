@@ -10,6 +10,7 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: linear-gradient(180deg, #0f172a 0%, #0b0f1a 50%, #1e1b2e 100%);
     color: #f1f5f9;
+    overflow-x: hidden; /* Prevent horizontal scrolling on body */
   }
   .card { background: linear-gradient(135deg, #1e293b 0%, #111827 100%); }
   .btn-primary { background: linear-gradient(90deg, #4338ca 0%, #312e81 100%); transition: background 0.2s ease, transform 0.2s ease; }
@@ -22,14 +23,53 @@
   .btn-warning:hover { background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); transform: translateY(-2px); }
   .btn-secondary { background: linear-gradient(90deg, #334155 0%, #1e293b 100%); transition: background 0.2s ease, transform 0.2s ease; }
   .btn-secondary:hover { background: linear-gradient(90deg, #475569 0%, #334155 100%); transform: translateY(-2px); }
-  .log-pre { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid #334155; color: #e2e8f0; white-space: pre-wrap; word-break: break-word; }
-  .form-control { background-color: #1e293b; border: 1px solid #334155; color: #e2e8f0; }
-  .log-filter-btn { background-color: #334155; transition: background-color 0.2s ease; }
+  .log-pre { 
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
+    border: 1px solid #334155; 
+    color: #e2e8f0; 
+    white-space: pre-wrap; 
+    word-break: break-word; 
+    width: 100%; /* Ensure log fits container */
+    box-sizing: border-box; /* Include padding/border in width */
+  }
+  .form-control { 
+    background-color: #1e293b; 
+    border: 1px solid #334155; 
+    color: #e2e8f0; 
+    width: 100%; /* Ensure input fits container */
+    box-sizing: border-box;
+  }
+  .log-filter-btn { 
+    background-color: #334155; 
+    transition: background-color 0.2s ease; 
+  }
   .log-filter-btn:hover { background-color: #475569; }
-  .log-filter-btn.active { background-color: #4f46e5; font-weight: bold; color: white; }
-  .content-wrapper { position: relative; z-index: 2; }
-  .floating-icons { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 1; }
-  .floating-icon { position: absolute; opacity: 0.05; font-size: 6rem; animation: float 6s ease-in-out infinite; color: #6366f1; }
+  .log-filter-btn.active { 
+    background-color: #4f46e5; 
+    font-weight: bold; 
+    color: white; 
+  }
+  .content-wrapper { 
+    position: relative; 
+    z-index: 2; 
+    width: 100%; /* Ensure wrapper fits viewport */
+  }
+  .floating-icons { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    overflow: hidden; 
+    z-index: 1; 
+  }
+  .floating-icon { 
+    position: absolute; 
+    opacity: 0.05; 
+    font-size: 3rem; 
+    animation: float 6s ease-in-out infinite; 
+    color: #6366f1; 
+  }
   .floating-icon:nth-child(1) { top: 40%; left: 80%; animation-delay: 0s; }
   .floating-icon:nth-child(2) { top: 60%; left: 67%; animation-delay: 1s; }
   .floating-icon:nth-child(3) { top: 40%; left: 54%; animation-delay: 2s; }
@@ -37,11 +77,98 @@
   .floating-icon:nth-child(5) { top: 40%; left: 28%; animation-delay: 4s; }
   .floating-icon:nth-child(6) { top: 80%; left: 54%; animation-delay: 5s; }
   /* Tab Styles */
-  .tab, .inner-tab { border: 1px solid transparent; border-bottom: none; padding: 0.5rem 1rem; cursor: pointer; font-weight: 500; color: #94a3b8; transition: color 0.2s, border-color 0.2s; }
+  .tab, .inner-tab { 
+    border: 1px solid transparent; 
+    border-bottom: none; 
+    padding: 0.5rem 0.75rem; 
+    cursor: pointer; 
+    font-weight: 500; 
+    color: #94a3b8; 
+    transition: color 0.2s, border-color 0.2s; 
+    font-size: 0.875rem; 
+    flex: 1; /* Make tabs share space equally */
+    text-align: center;
+    min-width: 0; /* Prevent tabs from forcing overflow */
+  }
   .tab:hover, .inner-tab:hover { color: #e2e8f0; }
-  .tab.active, .inner-tab.active { color: #f1f5f9; border-color: #334155; background-color: #1e293b; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; }
+  .tab.active, .inner-tab.active { 
+    color: #f1f5f9; 
+    border-color: #334155; 
+    background-color: #1e293b; 
+    border-top-left-radius: 0.375rem; 
+    border-top-right-radius: 0.375rem; 
+  }
   .tab-content.hidden, .inner-tab-content.hidden { display: none; }
-  @keyframes float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
+  @keyframes float { 
+    0%, 100% { transform: translateY(0px) rotate(0deg); } 
+    50% { transform: translateY(-20px) rotate(5deg); } 
+  }
+  /* Responsive Adjustments */
+  @media (max-width: 640px) {
+    main { 
+      padding: 1rem; 
+      width: 100%; /* Ensure main fits viewport */
+      box-sizing: border-box;
+    }
+    .max-w-4xl { 
+      max-width: 100%; 
+      width: 100%; /* Ensure container fits viewport */
+      margin: 0; /* Remove horizontal margins */
+    }
+    .tab, .inner-tab { 
+      padding: 0.4rem 0.5rem; 
+      font-size: 0.75rem; 
+      flex: 1 1 auto; /* Allow tabs to shrink */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis; /* Truncate long tab names */
+    }
+    .log-pre { 
+      max-height: 200px; /* Smaller log height for mobile */
+      font-size: 0.7rem; 
+      padding: 0.5rem;
+    }
+    .form-control { 
+      font-size: 0.7rem; 
+      padding: 0.4rem; 
+    }
+    .log-filter-btn { 
+      padding: 0.25rem 0.4rem; 
+      font-size: 0.6rem; 
+    }
+    .flex-wrap.gap-2 { 
+      gap: 0.5rem; 
+      flex-direction: column; /* Stack buttons vertically */
+      align-items: stretch; /* Buttons take full width */
+    }
+    .btn-success, .btn-danger, .btn-warning, .btn-primary, .btn-secondary { 
+      padding: 0.4rem 0.75rem; 
+      font-size: 0.7rem; 
+      width: 100%; /* Full-width buttons */
+      text-align: center;
+    }
+    h1 { font-size: 1.25rem; }
+    h5 { font-size: 1rem; }
+    h6 { font-size: 0.75rem; }
+    .floating-icon { font-size: 1.5rem; } /* Smaller floating icons */
+    nav[aria-label="Tabs"], nav[aria-label="Inner Tabs"] {
+      display: flex;
+      flex-wrap: nowrap; /* Prevent wrapping to avoid overflow */
+      overflow-x: auto; /* Allow scrolling if tabs exceed width */
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .flex.md\\:flex-row { 
+      flex-direction: column; /* Stack input and filters vertically */
+      gap: 0.5rem;
+    }
+    .flex-shrink-0.space-x-1 { 
+      display: flex; 
+      flex-wrap: wrap; /* Allow filter buttons to wrap */
+      gap: 0.25rem; 
+      justify-content: center; 
+    }
+  }
 </style>
 </head>
 <body class="text-gray-100 min-h-screen">
@@ -56,7 +183,7 @@
 
           <!-- Main Tabs -->
           <div class="mb-4 border-b border-gray-700">
-              <nav class="-mb-px flex space-x-2" aria-label="Tabs">
+              <nav class="-mb-px flex space-x-2 overflow-x-auto" aria-label="Tabs">
                   <button id="main-tab-clients" onclick="switchMainTab('clients')" class="tab active">Clients</button>
                   <button id="main-tab-servers" onclick="switchMainTab('servers')" class="tab">Servers</button>
               </nav>
@@ -248,46 +375,66 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll("pre[id^='logs-client-']").forEach(pre => {
-            const clientName = pre.id.replace("logs-client-", "");
-            connectToLogStream('client', clientName);
-        });
-        document.querySelectorAll("pre[id^='logs-server-']").forEach(pre => {
-            const serverName = pre.id.replace("logs-server-", "");
-            connectToLogStream('server', serverName);
-        });
+        // Check if clients or servers exist
+        const hasClients = document.querySelectorAll("pre[id^='logs-client-']").length > 0;
+        const hasServers = document.querySelectorAll("pre[id^='logs-server-']").length > 0;
+
+        // Determine initial main tab
+        let initialMainTab = 'clients';
+        if (!hasClients && hasServers) {
+            initialMainTab = 'servers';
+        } else if (!hasServers && hasClients) {
+            initialMainTab = 'clients';
+        } else if (!hasClients && !hasServers) {
+            initialMainTab = 'clients';
+        }
 
         // Handle initial tab state from URL hash
         const hash = window.location.hash;
         if (hash) {
-            // Remove the '#' and split "mainTab:innerTab"
             const parts = hash.substring(1).split(':');
-            const mainTab = parts[0]; // 'clients' or 'servers'
-            const innerTabName = parts[1]; // e.g., 'my-game-server'
+            const mainTab = parts[0];
+            const innerTabName = parts[1];
 
             if (mainTab === 'clients' || mainTab === 'servers') {
-                // Switch the main tab first
-                switchMainTab(mainTab);
-
-                if (innerTabName) {
-                    const prefix = mainTab.slice(0, -1); // 'client' or 'server'
-                    const innerTabElement = document.getElementById(`tab-${prefix}-${innerTabName}`);
-                    
-                    // Only switch if the inner tab actually exists on the page
-                    if (innerTabElement) {
-                        switchInnerTab(prefix, innerTabName);
+                if ((mainTab === 'clients' && hasClients) || (mainTab === 'servers' && hasServers)) {
+                    switchMainTab(mainTab);
+                    if (innerTabName) {
+                        const prefix = mainTab.slice(0, -1);
+                        const innerTabElement = document.getElementById(`tab-${prefix}-${innerTabName}`);
+                        if (innerTabElement) {
+                            switchInnerTab(prefix, innerTabName);
+                        }
                     }
+                } else {
+                    switchMainTab(initialMainTab);
                 }
+            } else {
+                switchMainTab(initialMainTab);
             }
+        } else {
+            switchMainTab(initialMainTab);
         }
+
+        // Connect to log streams for clients
+        document.querySelectorAll("pre[id^='logs-client-']").forEach(pre => {
+            const clientName = pre.id.replace("logs-client-", "");
+            connectToLogStream('client', clientName);
+        });
+
+        // Connect to log streams for servers
+        document.querySelectorAll("pre[id^='logs-server-']").forEach(pre => {
+            const serverName = pre.id.replace("logs-server-", "");
+            connectToLogStream('server', serverName);
+        });
     });
 </script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('floating-icons-container');
     if (container) {
-      const techEmojis = ['💻', '🖥️', '💾', '💿', '🔌', '📡', '🛰️', '🚀', '⚙️', '🔧', '🔬', '💡', '📈', '📊', '🔗', '🌐', '☁️', '⚡️', '🤖', '👾', '📱', '⌨️', '🖱️', '🔋', '🧠'];
-      const iconCount = 6; // As per the CSS
+      const techEmojis = ['💻', '🖥️', '💾', '💿', '🔌', '📡', '� satellite️', '🚀', '⚙️', '🔧', '🔬', '💡', '📈', '📊', '🔗', '🌐', '☁️', '⚡️', '🤖', '👾', '📱', '⌨️', '🖱️', '🔋', '🧠'];
+      const iconCount = 6;
       let iconsHtml = '';
       for (let i = 0; i < iconCount; i++) {
         const randomEmoji = techEmojis[Math.floor(Math.random() * techEmojis.length)];

@@ -12,18 +12,22 @@
     background: linear-gradient(180deg, #0f172a 0%, #0b0f1a 50%, #1e1b2e 100%);
     color: #f1f5f9;
   }
-  .system-info, .frp-status {
-    background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
-  }
-  .card {
-    background: linear-gradient(135deg, #1e293b 0%, #111827 100%);
-  }
-  .metric-value {
-    transition: color 0.3s ease;
-  }
-  .metric-high { color: #ef4444; }
-  .metric-medium { color: #f59e0b; }
-  .metric-low { color: #22c55e; }
+  .card { background: linear-gradient(135deg, #1e293b 0%, #111827 100%); }
+  .btn-primary { background: linear-gradient(90deg, #4338ca 0%, #312e81 100%); transition: background 0.2s ease, transform 0.2s ease; }
+  .btn-primary:hover { background: linear-gradient(90deg, #4f46e5 0%, #3730a3 100%); transform: translateY(-2px); }
+  .btn-success { background: linear-gradient(90deg, #16a34a 0%, #15803d 100%); transition: background 0.2s ease, transform 0.2s ease; }
+  .btn-success:hover { background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%); transform: translateY(-2px); }
+  .btn-danger { background: linear-gradient(90deg, #dc2626 0%, #991b1b 100%); transition: background 0.2s ease, transform 0.2s ease; }
+  .btn-danger:hover { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); transform: translateY(-2px); }
+  .btn-warning { background: linear-gradient(90deg, #d97706 0%, #b45309 100%); transition: background 0.2s ease, transform 0.2s ease; }
+  .btn-warning:hover { background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); transform: translateY(-2px); }
+  .btn-secondary { background: linear-gradient(90deg, #334155 0%, #1e293b 100%); transition: background 0.2s ease, transform 0.2s ease; }
+  .btn-secondary:hover { background: linear-gradient(90deg, #475569 0%, #334155 100%); transform: translateY(-2px); }
+  .log-pre { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid #334155; color: #e2e8f0; white-space: pre-wrap; word-break: break-word; }
+  .form-control { background-color: #1e293b; border: 1px solid #334155; color: #e2e8f0; }
+  .log-filter-btn { background-color: #334155; transition: background-color 0.2s ease; }
+  .log-filter-btn:hover { background-color: #475569; }
+  .log-filter-btn.active { background-color: #4f46e5; font-weight: bold; color: white; }
   .content-wrapper { position: relative; z-index: 2; }
   .floating-icons { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 1; }
   .floating-icon { position: absolute; opacity: 0.05; font-size: 6rem; animation: float 6s ease-in-out infinite; color: #6366f1; }
@@ -33,16 +37,59 @@
   .floating-icon:nth-child(4) { top: 60%; left: 41%; animation-delay: 3s; }
   .floating-icon:nth-child(5) { top: 40%; left: 28%; animation-delay: 4s; }
   .floating-icon:nth-child(6) { top: 80%; left: 54%; animation-delay: 5s; }
+  .tab, .inner-tab { border: 1px solid transparent; border-bottom: none; padding: 0.5rem 1rem; cursor: pointer; font-weight: 500; color: #94a3b8; transition: color 0.2s, border-color 0.2s; }
+  .tab:hover, .inner-tab:hover { color: #e2e8f0; }
+  .tab.active, .inner-tab.active { color: #f1f5f9; border-color: #334155; background-color: #1e293b; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; }
+  .tab-content.hidden, .inner-tab-content.hidden { display: none; }
   @keyframes float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
-  .network-chart-container {
-    max-width: 600px;
-    height: 300px;
-  }
+  .system-info, .frp-status { background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%); }
+  .metric-value { transition: color 0.3s ease; }
+  .metric-high { color: #ef4444; }
+  .metric-medium { color: #f59e0b; }
+  .metric-low { color: #22c55e; }
+  .tab-content { max-height: 300px; overflow-y: auto; }
+  .network-chart-container { max-width: 600px; height: 300px; }
   .status-dot { width: 10px; height: 10px; border-radius: 50%; }
   .status-dot-green { background-color: #22c55e; }
   .status-dot-orange { background-color: #f59e0b; }
   .status-dot-red { background-color: #ef4444; }
   .status-dot-gray { background-color: #6b7280; }
+  .sidebar {
+    background: linear-gradient(180deg, #0f172a 0%, #0b0f1a 50%, #1e1b2e 100%);
+    border-right: 1px solid #334155;
+    color: #f1f5f9;
+    transition: transform 0.3s ease-in-out;
+  }
+  .sidebar-link {
+    transition: background 0.2s ease, transform 0.2s ease;
+    background: linear-gradient(90deg, #334155 0%, #1e293b 100%);
+    color: #e2e8f0;
+    padding: 0.75rem 1rem;
+    display: block;
+    border-radius: 0.375rem;
+  }
+  .sidebar-link:hover {
+    background: linear-gradient(90deg, #475569 0%, #334155 100%);
+    transform: translateX(4px);
+    color: #ffffff;
+  }
+  .sidebar-link:active {
+    background: linear-gradient(90deg, #64748b 0%, #475569 100%);
+  }
+  @media (max-width: 768px) {
+    .sidebar {
+      transform: translateX(-100%);
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 50;
+      width: 75%;
+      max-width: 16rem;
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+  }
 </style>
 </head>
 <body class="text-gray-100 min-h-screen">
@@ -72,17 +119,21 @@
               <!-- Connection Overview -->
               <div class="card rounded-xl p-6 shadow-lg" id="connection-overview-container">
                 <h2 class="text-xl font-semibold text-gray-100 mb-4">Connection Overview</h2>
-                <div>
-                  <h3 class="text-base font-medium text-gray-300 mb-2">Servers</h3>
-                  <ul id="server-status-list" class="space-y-2">
-                    <li class="text-gray-500 text-sm">Loading...</li>
-                  </ul>
+                <div class="flex border-b border-gray-600">
+                  <button class="tab flex-1 py-2 px-4 text-sm font-medium active" data-tab="servers">Servers</button>
+                  <button class="tab flex-1 py-2 px-4 text-sm font-medium" data-tab="clients">Clients</button>
                 </div>
-                <div class="mt-4">
-                  <h3 class="text-base font-medium text-gray-300 mb-2">Clients</h3>
-                  <ul id="client-status-list" class="space-y-2">
-                    <li class="text-gray-500 text-sm">Loading...</li>
-                  </ul>
+                <div class="tab-content mt-4">
+                  <div id="servers-tab" class="tab-pane">
+                    <ul id="server-status-list" class="space-y-2">
+                      <li class="text-gray-500 text-sm">Loading...</li>
+                    </ul>
+                  </div>
+                  <div id="clients-tab" class="tab-pane hidden">
+                    <ul id="client-status-list" class="space-y-2">
+                      <li class="text-gray-500 text-sm">Loading...</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
@@ -173,6 +224,9 @@
         serverListEl.innerHTML = '';
         clientListEl.innerHTML = '';
 
+        let hasActiveServers = false;
+        let hasActiveClients = false;
+
         if (data.servers && data.servers.length > 0) {
             data.servers.forEach(server => {
                 const statusInfo = statusMap[server.status] || statusMap['stopped'];
@@ -186,6 +240,9 @@
                     </div>
                 `;
                 serverListEl.appendChild(li);
+                if (server.status === 'running' || server.status === 'warning') {
+                    hasActiveServers = true;
+                }
             });
         } else {
             serverListEl.innerHTML = '<li class="text-gray-500 text-sm">No servers configured.</li>';
@@ -204,13 +261,33 @@
                     </div>
                 `;
                 clientListEl.appendChild(li);
+                if (client.status === 'running' || client.status === 'warning') {
+                    hasActiveClients = true;
+                }
             });
         } else {
             clientListEl.innerHTML = '<li class="text-gray-500 text-sm">No clients configured.</li>';
         }
+
+        // Set active tab based on active configurations
+        const tabButtons = document.querySelectorAll('.tab');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabPanes.forEach(pane => pane.classList.add('hidden'));
+
+        if (hasActiveServers) {
+            document.querySelector('.tab[data-tab="servers"]').classList.add('active');
+            document.getElementById('servers-tab').classList.remove('hidden');
+        } else if (hasActiveClients) {
+            document.querySelector('.tab[data-tab="clients"]').classList.add('active');
+            document.getElementById('clients-tab').classList.remove('hidden');
+        } else {
+            // Default to servers if no active configurations
+            document.querySelector('.tab[data-tab="servers"]').classList.add('active');
+            document.getElementById('servers-tab').classList.remove('hidden');
+        }
     } catch (error) {
         console.error('Error fetching connection overview:', error);
-        // Avoid overwriting the entire card on error, just the lists
         serverListEl.innerHTML = '<li class="text-red-400 text-sm">Error loading status.</li>';
         clientListEl.innerHTML = '<li class="text-red-400 text-sm">Error loading status.</li>';
     }
@@ -265,6 +342,20 @@
     setInterval(updateFRPStatus, 5000);
     setInterval(updateNetworkChart, 5000);
     setInterval(updateConnectionOverview, 5000);
+
+    // Tab switching logic
+    const tabButtons = document.querySelectorAll('.tab');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+
+        tabPanes.forEach(pane => pane.classList.add('hidden'));
+        document.getElementById(`${button.dataset.tab}-tab`).classList.remove('hidden');
+      });
+    });
   });
 </script>
 <script>

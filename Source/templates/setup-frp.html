@@ -10,32 +10,204 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: linear-gradient(180deg, #0f172a 0%, #0b0f1a 50%, #1e1b2e 100%);
     color: #f1f5f9;
+    overflow-x: hidden; /* Prevent horizontal scrolling on body */
   }
-  .form-container, .container-card { background: linear-gradient(135deg, #1e293b 0%, #111827 100%); border: 1px solid #334155; padding: 1.5rem; border-radius: 0.75rem; }
-  .btn-primary { background: linear-gradient(90deg, #334155 0%, #1e293b 100%); transition: background 0.2s ease, transform 0.2s ease; color: #f1f5f9; border: none; }
-  .btn-primary:hover { background: linear-gradient(90deg, #475569 0%, #334155 100%); transform: translateY(-2px); }
-  .btn-secondary { background: linear-gradient(90deg, #475569 0%, #334155 100%); transition: background 0.2s ease, transform 0.2s ease; color: #f1f5f9; border: none; }
-  .btn-secondary:hover { background: linear-gradient(90deg, #64748b 0%, #475569 100%); transform: translateY(-2px); }
-  .btn-danger { background: linear-gradient(90deg, #dc2626 0%, #991b1b 100%); transition: background 0.2s ease, transform 0.2s ease; color: #f1f5f9; border: none; }
-  .btn-danger:hover { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); transform: translateY(-2px); }
-  .form-control, .form-select { background-color: #1e293b; border: 1px solid #334155; color: #e2e8f0; padding: 0.75rem; border-radius: 0.5rem; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
-  .form-control:focus, .form-select:focus { background-color: #1e293b; border-color: #6366f1; outline: none; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
-  .form-label { color: #94a3b8; }
-  .preset-item { background-color: #1e293b; border: 1px solid #334155; }
-  .content-wrapper { position: relative; z-index: 2; }
-  .floating-icons { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 1; }
-  .floating-icon { position: absolute; opacity: 0.05; font-size: 6rem; animation: float 6s ease-in-out infinite; color: #6366f1; }
+  .form-container, .container-card { 
+    background: linear-gradient(135deg, #1e293b 0%, #111827 100%); 
+    border: 1px solid #334155; 
+    padding: 1.5rem; 
+    border-radius: 0.75rem; 
+    width: 100%; /* Ensure full width */
+    box-sizing: border-box;
+  }
+  .btn-primary { 
+    background: linear-gradient(90deg, #334155 0%, #1e293b 100%); 
+    transition: background 0.2s ease, transform 0.2s ease; 
+    color: #f1f5f9; 
+    border: none; 
+  }
+  .btn-primary:hover { 
+    background: linear-gradient(90deg, #475569 0%, #334155 100%); 
+    transform: translateY(-2px); 
+  }
+  .btn-secondary { 
+    background: linear-gradient(90deg, #475569 0%, #334155 100%); 
+    transition: background 0.2s ease, transform 0.2s ease; 
+    color: #f1f5f9; 
+    border: none; 
+  }
+  .btn-secondary:hover { 
+    background: linear-gradient(90deg, #64748b 0%, #475569 100%); 
+    transform: translateY(-2px); 
+  }
+  .btn-danger { 
+    background: linear-gradient(90deg, #dc2626 0%, #991b1b 100%); 
+    transition: background 0.2s ease, transform 0.2s ease; 
+    color: #f1f5f9; 
+    border: none; 
+  }
+  .btn-danger:hover { 
+    background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); 
+    transform: translateY(-2px); 
+  }
+  .form-control, .form-select { 
+    background-color: #1e293b; 
+    border: 1px solid #334155; 
+    color: #e2e8f0; 
+    padding: 0.75rem; 
+    border-radius: 0.5rem; 
+    transition: border-color 0.2s ease, box-shadow 0.2s ease; 
+    width: 100%; /* Ensure full width */
+    box-sizing: border-box;
+  }
+  .form-control:focus, .form-select:focus { 
+    background-color: #1e293b; 
+    border-color: #6366f1; 
+    outline: none; 
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); 
+  }
+  .form-label { 
+    color: #94a3b8; 
+  }
+  .preset-item { 
+    background-color: #1e293b; 
+    border: 1px solid #334155; 
+    width: 100%; 
+    box-sizing: border-box;
+  }
+  .content-wrapper { 
+    position: relative; 
+    z-index: 2; 
+    width: 100%; /* Ensure wrapper fits viewport */
+  }
+  .floating-icons { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    overflow: hidden; 
+    z-index: 1; 
+  }
+  .floating-icon { 
+    position: absolute; 
+    opacity: 0.05; 
+    font-size: 3rem; 
+    animation: float 6s ease-in-out infinite; 
+    color: #6366f1; 
+  }
   .floating-icon:nth-child(1) { top: 40%; left: 80%; animation-delay: 0s; }
   .floating-icon:nth-child(2) { top: 60%; left: 67%; animation-delay: 1s; }
   .floating-icon:nth-child(3) { top: 40%; left: 54%; animation-delay: 2s; }
   .floating-icon:nth-child(4) { top: 60%; left: 41%; animation-delay: 3s; }
   .floating-icon:nth-child(5) { top: 40%; left: 28%; animation-delay: 4s; }
   .floating-icon:nth-child(6) { top: 80%; left: 54%; animation-delay: 5s; }
-  .main-tab, .preset-tab { border: 1px solid transparent; border-bottom: none; padding: 0.5rem 1rem; cursor: pointer; font-weight: 500; color: #94a3b8; transition: color 0.2s, border-color 0.2s; }
-  .main-tab:hover, .preset-tab:hover { color: #e2e8f0; }
-  .main-tab.active, .preset-tab.active { color: #f1f5f9; border-color: #334155; background-color: #1e293b; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; }
-  .main-tab-content.hidden, .preset-tab-content.hidden { display: none; }
-  @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
+  .main-tab, .preset-tab { 
+    border: 1px solid transparent; 
+    border-bottom: none; 
+    padding: 0.5rem 0.75rem; 
+    cursor: pointer; 
+    font-weight: 500; 
+    color: #94a3b8; 
+    transition: color 0.2s, border-color 0.2s; 
+    font-size: 0.875rem; 
+    flex: 1; /* Make tabs share space equally */
+    text-align: center;
+    min-width: 0; /* Prevent tabs from forcing overflow */
+  }
+  .main-tab:hover, .preset-tab:hover { 
+    color: #e2e8f0; 
+  }
+  .main-tab.active, .preset-tab.active { 
+    color: #f1f5f9; 
+    border-color: #334155; 
+    background-color: #1e293b; 
+    border-top-left-radius: 0.375rem; 
+    border-top-right-radius: 0.375rem; 
+  }
+  .main-tab-content.hidden, .preset-tab-content.hidden { 
+    display: none; 
+  }
+  @keyframes float { 
+    0%, 100% { transform: translateY(0px); } 
+    50% { transform: translateY(-20px); } 
+  }
+  /* Responsive Adjustments */
+  @media (max-width: 640px) {
+    main { 
+      padding: 1rem; 
+      width: 100%; /* Ensure main fits viewport */
+      box-sizing: border-box;
+    }
+    .max-w-4xl { 
+      max-width: 100%; 
+      width: 100%; /* Ensure container fits viewport */
+      margin: 0; /* Remove horizontal margins */
+    }
+    .max-w-lg { 
+      max-width: 100%; 
+      width: 100%; 
+    }
+    .main-tab, .preset-tab { 
+      padding: 0.4rem 0.5rem; 
+      font-size: 0.75rem; 
+      flex: 1 1 auto; /* Allow tabs to shrink */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis; /* Truncate long tab names */
+    }
+    .form-container, .container-card { 
+      padding: 1rem; 
+    }
+    .form-control, .form-select { 
+      font-size: 0.75rem; 
+      padding: 0.5rem; 
+    }
+    .form-label { 
+      font-size: 0.7rem; 
+    }
+    .btn-primary, .btn-secondary, .btn-danger { 
+      padding: 0.5rem 0.75rem; 
+      font-size: 0.7rem; 
+      width: 100%; /* Full-width buttons */
+      text-align: center;
+    }
+    h1 { font-size: 1.25rem; }
+    h2 { font-size: 1rem; }
+    .preset-item { 
+      padding: 0.75rem; 
+      font-size: 0.75rem; 
+    }
+    .preset-item h3 { font-size: 0.875rem; }
+    .preset-item p { font-size: 0.7rem; }
+    .floating-icon { font-size: 1.5rem; } /* Smaller floating icons */
+    nav[aria-label="Tabs"], nav[aria-label="Preset Tabs"] {
+      display: flex;
+      flex-wrap: nowrap; /* Prevent wrapping to avoid overflow */
+      overflow-x: auto; /* Allow scrolling if tabs exceed width */
+      width: 100%;
+      box-sizing: border-box;
+      gap: 0.5rem; /* Smaller gap for mobile */
+    }
+    .grid.md\\:grid-cols-2 { 
+      grid-template-columns: 1fr; /* Single column on mobile */
+      gap: 1rem;
+    }
+    .flex.sm\\:flex-row { 
+      flex-direction: column; /* Stack buttons vertically */
+      gap: 0.5rem;
+    }
+    .space-y-4 > :not([hidden]) ~ :not([hidden]) { 
+      margin-top: 0.75rem; /* Adjust spacing for form fields */
+    }
+    #system-status { 
+      font-size: 0.7rem; 
+      padding: 0.75rem; 
+    }
+    #client-preset-list, #server-preset-list { 
+      max-height: 400px; /* Smaller height for mobile */
+    }
+  }
 </style>
 </head>
 <body class="text-gray-100 min-h-screen">
@@ -257,7 +429,7 @@
     let clientPresets = {};
     fetch('/api/presets').then(res => res.json()).then(data => {
       clientPresets = data;
-      clientPresetSelector.innerHTML = '<option value="">-- Select a Preset --</option>'; // Clear previous
+      clientPresetSelector.innerHTML = '<option value="">-- Select a Preset --</option>';
       Object.keys(clientPresets).forEach(name => {
         const option = document.createElement('option');
         option.value = name;
@@ -283,7 +455,7 @@
     let serverPresets = {};
     fetch('/api/presets/server').then(res => res.json()).then(data => {
       serverPresets = data;
-      serverPresetSelector.innerHTML = '<option value="">-- Select a Preset --</option>'; // Clear previous
+      serverPresetSelector.innerHTML = '<option value="">-- Select a Preset --</option>';
       Object.keys(serverPresets).forEach(name => {
         const option = document.createElement('option');
         option.value = name;
@@ -393,7 +565,7 @@
     const container = document.getElementById('floating-icons-container');
     if (container) {
       const techEmojis = ['💻', '🖥️', '💾', '💿', '🔌', '📡', '🛰️', '🚀', '⚙️', '🔧', '🔬', '💡', '📈', '📊', '🔗', '🌐', '☁️', '⚡️', '🤖', '👾', '📱', '⌨️', '🖱️', '🔋', '🧠'];
-      const iconCount = 6; // As per the CSS
+      const iconCount = 6;
       let iconsHtml = '';
       for (let i = 0; i < iconCount; i++) {
         const randomEmoji = techEmojis[Math.floor(Math.random() * techEmojis.length)];
