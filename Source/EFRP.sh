@@ -2,17 +2,29 @@
 
 # --- Configuration ---
 CONFIG_DIR="/root/frp/client" # Directory containing FRP client configuration files
-ERROR_STRING="connect to server error: timeout|connect to local service error: dial tcp" # Partial string to look for in logs
+ERROR_STRING="connect to server error: timeout|connect to local service.*error: dial tcp.*connection refused" # Updated error string pattern
 LOG_FILE="/var/log/frp_monitor.log" # Log file for this script's actions
 MAX_RESTARTS_IN_ROW=3 # Maximum consecutive restarts per service before waiting
 CHECK_INTERVAL_SECONDS=10 # How often to check logs for errors (in seconds)
 SCHEDULED_RESTART_INTERVAL_MINUTES=20 # How often to perform a scheduled restart (in minutes)
 RESTART_STABILIZE_SLEEP=3 # Time to wait after a restart for service to stabilize
-RESTART_WAIT_SECONDS=10 # Time to wait after reaching max restarts before trying again# --- Functions ---
+RESTART_WAIT_SECONDS=10 # Time to wait after reaching max restarts before trying again
+
+# --- Functions ---
 
 # Function to log messages with a timestamp
 log_message() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+}
+
+# Function to check if a service is active
+check_service_status() {
+    local service_name="$1"
+    if systemctl is-active --quiet "frpc@$service_name.service"; then
+        return 0 # Service is active
+    else
+        return 1 # Service is not active
+    fi
 }
 
 # Function to restart a specific FRP service
@@ -26,9 +38,15 @@ restart_frp_service() {
     if [ $? -eq 0 ]; then
         log_message "frpc@$service_name.service restarted successfully."
         sleep "$RESTART_STABILIZE_SLEEP" # Give service time to start and log
-        return 0 # Success
+        if check_service_status "$service_name"; then
+            log_message "frpc@$service_name.service is active after restart."
+            return 0 # Success
+        else
+            log_message "frpc@$service_name.service is not active after restart. Check systemctl status."
+            return 1 # Failure
+        fi
     else
-        log_message "Failed to restart frpc@$service_name.service. Check systemctl status. Error code: $?."
+        log_message "Failed to restart frpc@$service_name.service. Error code: $?."
         return 1 # Failure
     fi
 }
@@ -52,16 +70,22 @@ fi
 
 # Initialize restart counts for each service based on config files
 declare -A restart_counts
+config_files_found=false
 for config_file in "$CONFIG_DIR"/*.toml; do
-    if [ ! -e "$config_file" ]; then
-        log_message "Error: No .toml configuration files found in $CONFIG_DIR. Exiting."
-        echo "Error: No .toml configuration files found in $CONFIG_DIR. Exiting."
-        exit 1
+    if [ -e "$config_file" ]; then
+        config_files_found=true
+        client_name=$(basename "$config_file" .toml)
+        service_name="$client_name"
+        restart_counts["$service_name"]=0
+        log_message "Found configuration for service: frpc@$service_name.service"
     fi
-    client_name=$(basename "$config_file" .toml)
-    service_name="$client_name"
-    restart_counts["$service_name"]=0
 done
+
+if [ "$config_files_found" = false ]; then
+    log_message "Error: No .toml configuration files found in $CONFIG_DIR. Exiting."
+    echo "Error: No .toml configuration files found in $CONFIG_DIR. Exiting."
+    exit 1
+fi
 
 last_scheduled_restart_time=$(date +%s) # Initialize with current time in seconds since epoch
 
@@ -84,7 +108,8 @@ while true; do
             fi
             restart_counts["$service_name"]=0 # Reset error-based restart count after a scheduled restart
         done
-        last_scheduled_restart_time=$current_time # Update last scheduled restart time    fi
+        last_scheduled_restart_time=$current_time # Update last scheduled restart time
+    fi
 
     # Check each service for errors
     for config_file in "$CONFIG_DIR"/*.toml; do
@@ -96,14 +121,16 @@ while true; do
         service_name="$client_name"
         log_message "Checking for error string: '$ERROR_STRING' in frpc@$service_name.service logs..."
 
-        # Use journalctl to get the last few lines of the service log
-        if journalctl -u "frpc@$service_name.service" --no-pager -n 3 | grep -E "$ERROR_STRING"; then
-            log_message "ERROR '$ERROR_STRING' DETECTED in frpc@$service_name.service logs!"
+        # Use journalctl to get the last few lines of the service log and capture any error
+        error_output=$(journalctl -u "frpc@$service_name.service" --no-pager -n 5 | grep -E "$ERROR_STRING")
+        if [ -n "$error_output" ]; then
+            log_message "ERROR DETECTED in frpc@$service_name.service logs: $error_output"
 
             if [ "${restart_counts["$service_name"]}" -ge "$MAX_RESTARTS_IN_ROW" ]; then
                 log_message "Maximum consecutive error-based restarts ($MAX_RESTARTS_IN_ROW) reached for frpc@$service_name.service. Waiting $RESTART_WAIT_SECONDS seconds before retrying."
                 sleep "$RESTART_WAIT_SECONDS"
-                restart_counts["$service_name"]=0 # Reset restart count to allow retry            fi
+                restart_counts["$service_name"]=0 # Reset restart count to allow retry
+            fi
 
             restart_counts["$service_name"]=$((restart_counts["$service_name"] + 1))
             log_message "Error-based restart attempt #${restart_counts["$service_name"]} for frpc@$service_name.service."
