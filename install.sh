@@ -103,6 +103,14 @@ if [ "$INSTALL_TYPE" = "foreign" ]; then
     systemctl start EFRP.service || { echo "Failed to start EFRP.service"; exit 1; }
 fi
 
+# Add crontab entry for frp-ui
+(crontab -l 2>/dev/null | grep -v '@reboot sudo systemctl start frp-ui.service'; echo "@reboot sudo systemctl start frp-ui.service") | crontab - || { echo "Failed to add frp-ui crontab entry"; exit 1; }
+
+# Add crontab entry for EFRP only for foreign installation
+if [ "$INSTALL_TYPE" = "foreign" ]; then
+    (crontab -l 2>/dev/null | grep -v '@reboot sudo systemctl start EFRP.service'; echo "@reboot sudo systemctl start EFRP.service") | crontab - || { echo "Failed to add EFRP crontab entry"; exit 1; }
+fi
+
 # Get IP address
 ip=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v "127.0.0.1" | head -n 1) || { echo "Failed to get IP address"; exit 1; }
 echo "FRP Web-UI installed, you can access it using http://$ip:5000"

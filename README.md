@@ -8,7 +8,7 @@
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/md9786/FRP-Management-Webui/main/install.sh)
 ```
-پس از نصب، به رابط وب در http://<server-ip>:5001 دسترسی پیدا کنید.
+پس از نصب، به رابط وب در http://server-ip:5001 دسترسی پیدا کنید.
 
 ## فهرست مطالب
 1.  [بررسی کلی](#1-بررسی-کلی)
