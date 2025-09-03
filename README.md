@@ -6,7 +6,7 @@
 # نصب با یک خط دستور
 دستور زیر را به‌عنوان کاربر root اجرا کنید تا رابط وب FRP نصب و سرویس systemd راه‌اندازی شود:
 ```bash
-wget -qO- https://raw.githubusercontent.com/md9786/FRP-Management-Webui/main/install.sh | bash
+bash <(curl -Ls https://raw.githubusercontent.com/md9786/FRP-Management-Webui/main/install.sh)
 ```
 پس از نصب، به رابط وب در http://<server-ip>:5001 دسترسی پیدا کنید.
 
