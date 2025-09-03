@@ -1,11 +1,31 @@
 #!/bin/bash
 set -e  # Exit on any error
-set -x  # Enable debug output
+#set -x  # Enable debug output
 
 echo "Installing FRP Web-UI"
 
+# Display menu and prompt user for installation type
+echo "Select installation type:"
+echo "1) Domestic "
+echo "2) Foreign "
+read -p "Enter choice (1 or 2): " choice
+
+# Validate user input
+case "$choice" in
+    1)
+        INSTALL_TYPE="domestic"
+        ;;
+    2)
+        INSTALL_TYPE="foreign"
+        ;;
+    *)
+        echo "Invalid choice. Please select 1 or 2."
+        exit 1
+        ;;
+esac
+
 # Create directories
-mkdir -p  /root/frp/frp-ui/templates || { echo "Failed to create directories"; exit 1; }
+mkdir -p /root/frp/frp-ui/templates || { echo "Failed to create directories"; exit 1; }
 cd /root/frp || { echo "Failed to change to /root/frp"; exit 1; }
 
 # Clone repository
@@ -29,7 +49,7 @@ rm -rf FRP-Management-Webui || { echo "Failed to remove source folder"; exit 1; 
 chmod +x /root/frp/frp-ui/frp-ui || { echo "Failed to set permissions for frp-ui"; exit 1; }
 chmod +x /root/frp/frp-ui/EFRP.sh || { echo "Failed to set permissions for EFRP.sh"; exit 1; }
 
-# Create systemd files
+# Create frp-ui systemd service
 cat > /etc/systemd/system/frp-ui.service << EOF || { echo "Failed to create frp-ui.service"; exit 1; }
 [Unit]
 Description=FRP Web UI
@@ -45,7 +65,9 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-cat > /etc/systemd/system/EFRP.service << EOF || { echo "Failed to create EFRP.service"; exit 1; }
+# Create EFRP systemd service only for foreign installation
+if [ "$INSTALL_TYPE" = "foreign" ]; then
+    cat > /etc/systemd/system/EFRP.service << EOF || { echo "Failed to create EFRP.service"; exit 1; }
 [Unit]
 Description=EFRP Service
 After=network.target
@@ -59,6 +81,7 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
 EOF
+fi
 
 # Manage services
 systemctl stop frp-ui.service 2>/dev/null || true
@@ -66,8 +89,12 @@ systemctl disable frp-ui.service 2>/dev/null || true
 systemctl daemon-reload || { echo "Failed to reload systemd"; exit 1; }
 systemctl enable frp-ui.service || { echo "Failed to enable frp-ui.service"; exit 1; }
 systemctl start frp-ui.service || { echo "Failed to start frp-ui.service"; exit 1; }
-systemctl enable EFRP.service || { echo "Failed to enable EFRP.service"; exit 1; }
-systemctl start EFRP.service || { echo "Failed to start EFRP.service"; exit 1; }
+
+# Manage EFRP service only for foreign installation
+if [ "$INSTALL_TYPE" = "foreign" ]; then
+    systemctl enable EFRP.service || { echo "Failed to enable EFRP.service"; exit 1; }
+    systemctl start EFRP.service || { echo "Failed to start EFRP.service"; exit 1; }
+fi
 
 # Get IP address
 ip=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v "127.0.0.1" | head -n 1) || { echo "Failed to get IP address"; exit 1; }
