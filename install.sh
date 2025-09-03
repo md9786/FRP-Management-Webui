@@ -4,25 +4,32 @@ set -e  # Exit on any error
 
 echo "Installing FRP Web-UI"
 
-# Display menu and prompt user for installation type
-echo "Select installation type:"
-echo "1) Domestic "
-echo "2) Foreign "
-read -p "Enter choice (1 or 2): " choice
+# Check if running interactively
+if [ -t 0 ]; then
+    # Interactive: Show menu and prompt user
+    echo "Select installation type:"
+    echo "1) Domestic (without EFRP service)"
+    echo "2) Foreign (with EFRP service)"
+    read -p "Enter choice (1 or 2): " choice
 
-# Validate user input
-case "$choice" in
-    1)
-        INSTALL_TYPE="domestic"
-        ;;
-    2)
-        INSTALL_TYPE="foreign"
-        ;;
-    *)
-        echo "Invalid choice. Please select 1 or 2."
-        exit 1
-        ;;
-esac
+    # Validate user input
+    case "$choice" in
+        1)
+            INSTALL_TYPE="domestic"
+            ;;
+        2)
+            INSTALL_TYPE="foreign"
+            ;;
+        *)
+            echo "Invalid choice. Please select 1 or 2."
+            exit 1
+            ;;
+    esac
+else
+    # Non-interactive: Default to foreign
+    echo "Non-interactive mode detected, defaulting to Foreign installation"
+    INSTALL_TYPE="foreign"
+fi
 
 # Create directories
 mkdir -p /root/frp/frp-ui/templates || { echo "Failed to create directories"; exit 1; }
