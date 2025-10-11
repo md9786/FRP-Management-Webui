@@ -54,6 +54,22 @@
   .status-dot-orange { background-color: #f59e0b; }
   .status-dot-red { background-color: #ef4444; }
   .status-dot-gray { background-color: #6b7280; }
+  .status-item { position: relative; }
+  .status-tooltip { 
+    visibility: hidden; 
+    position: absolute; 
+    bottom: 100%; 
+    left: 50%; 
+    transform: translateX(-50%); 
+    background: #1e293b; 
+    color: #e2e8f0; 
+    padding: 0.25rem 0.5rem; 
+    border-radius: 0.25rem; 
+    font-size: 0.75rem; 
+    white-space: nowrap; 
+    z-index: 10; 
+  }
+  .status-item:hover .status-tooltip { visibility: visible; }
   .sidebar {
     background: linear-gradient(180deg, #0f172a 0%, #0b0f1a 50%, #1e1b2e 100%);
     border-right: 1px solid #334155;
@@ -125,12 +141,12 @@
                 </div>
                 <div class="tab-content mt-4">
                   <div id="servers-tab" class="tab-pane">
-                    <ul id="server-status-list" class="space-y-2">
+                    <ul id="server-status-list" class="grid grid-cols-3 gap-4">
                       <li class="text-gray-500 text-sm">Loading...</li>
                     </ul>
                   </div>
                   <div id="clients-tab" class="tab-pane hidden">
-                    <ul id="client-status-list" class="space-y-2">
+                    <ul id="client-status-list" class="grid grid-cols-3 gap-4">
                       <li class="text-gray-500 text-sm">Loading...</li>
                     </ul>
                   </div>
@@ -231,12 +247,12 @@
             data.servers.forEach(server => {
                 const statusInfo = statusMap[server.status] || statusMap['stopped'];
                 const li = document.createElement('li');
-                li.className = 'flex items-center justify-between text-sm py-1';
+                li.className = 'status-item text-sm';
                 li.innerHTML = `
-                    <span class="text-gray-300 truncate pr-2">${server.name}</span>
-                    <div class="flex items-center flex-shrink-0">
-                        <span class="status-dot status-dot-${statusInfo.color} mr-2"></span>
-                        <span class="capitalize text-gray-400">${statusInfo.text}</span>
+                    <div class="flex items-center">
+                        <span class="status-dot status-dot-${statusInfo.color} mb-1"></span>
+                        <span class="text-gray-300 truncate pl-2">${server.name}</span>
+                        <span class="status-tooltip capitalize">${statusInfo.text}</span>
                     </div>
                 `;
                 serverListEl.appendChild(li);
@@ -245,19 +261,19 @@
                 }
             });
         } else {
-            serverListEl.innerHTML = '<li class="text-gray-500 text-sm">No servers configured.</li>';
+            serverListEl.innerHTML = '<li class="text-gray-500 text-sm col-span-3">No servers configured.</li>';
         }
 
         if (data.clients && data.clients.length > 0) {
             data.clients.forEach(client => {
                 const statusInfo = statusMap[client.status] || statusMap['stopped'];
                 const li = document.createElement('li');
-                li.className = 'flex items-center justify-between text-sm py-1';
+                li.className = 'status-item text-sm';
                 li.innerHTML = `
-                    <span class="text-gray-300 truncate pr-2">${client.name}</span>
-                    <div class="flex items-center flex-shrink-0">
-                        <span class="status-dot status-dot-${statusInfo.color} mr-2"></span>
-                        <span class="capitalize text-gray-400">${statusInfo.text}</span>
+                    <div class="flex items-center">
+                        <span class="status-dot status-dot-${statusInfo.color} mb-1"></span>
+                        <span class="text-gray-300 truncate pl-2">${client.name}</span>
+                        <span class="status-tooltip capitalize">${statusInfo.text}</span>
                     </div>
                 `;
                 clientListEl.appendChild(li);
@@ -266,7 +282,7 @@
                 }
             });
         } else {
-            clientListEl.innerHTML = '<li class="text-gray-500 text-sm">No clients configured.</li>';
+            clientListEl.innerHTML = '<li class="text-gray-500 text-sm col-span-3">No clients configured.</li>';
         }
 
         // Set active tab based on active configurations
@@ -288,8 +304,8 @@
         }
     } catch (error) {
         console.error('Error fetching connection overview:', error);
-        serverListEl.innerHTML = '<li class="text-red-400 text-sm">Error loading status.</li>';
-        clientListEl.innerHTML = '<li class="text-red-400 text-sm">Error loading status.</li>';
+        serverListEl.innerHTML = '<li class="text-red-400 text-sm col-span-3">Error loading status.</li>';
+        clientListEl.innerHTML = '<li class="text-red-400 text-sm col-span-3">Error loading status.</li>';
     }
 }
 
@@ -298,11 +314,11 @@
     try {
       const response = await fetch('/api/system/history');
       if (!response.ok) return;
-      const history = await response.json() || [];
+      const data = await response.json() || [];
 
-      const labels = history.map(p => new Date(p.timestamp).toLocaleTimeString());
-      const uploadData = history.map(p => p.network_upload / 1024); // KB/s
-      const downloadData = history.map(p => p.network_download / 1024); // KB/s
+      const labels = data.map(p => new Date(p.timestamp).toLocaleTimeString());
+      const uploadData = data.map(p => p.network_upload / 1024); // KB/s
+      const downloadData = data.map(p => p.network_download / 1024); // KB/s
 
       if (!networkChart) {
         const ctx = document.getElementById('network-chart').getContext('2d');
