@@ -142,6 +142,12 @@
       flex-direction: column; /* Stack buttons vertically */
       align-items: stretch; /* Buttons take full width */
     }
+    .flex-wrap.gap-2 form {
+      flex-direction: column;
+    }
+    .flex-wrap.gap-2 form .flex-grow {
+      width: 100%;
+    }
     .btn-success, .btn-danger, .btn-warning, .btn-primary, .btn-secondary { 
       padding: 0.4rem 0.75rem; 
       font-size: 0.7rem; 
@@ -175,12 +181,14 @@
 <body class="text-gray-100 min-h-screen">
   <div class="floating-icons" id="floating-icons-container"></div>
 
+
   <div class="content-wrapper">
     <div class="flex">
       {{template "sidebar.html" .}}
       <main class="flex-1 p-4 md:p-8">
         <div class="max-w-4xl mx-auto">
           <h1 class="text-2xl font-semibold text-gray-100 mb-4">Manage FRP</h1>
+
 
           <!-- Main Tabs -->
           <select id="main-tab-select" class="form-control mb-4 block md:hidden" onchange="switchMainTab(this.value)">
@@ -194,12 +202,21 @@
               </nav>
           </div>
 
+
           <!-- Main Content: Clients -->
           <div id="main-content-clients" class="tab-content">
-            <div class="flex flex-wrap gap-2 mb-6">
+            <div class="flex flex-wrap gap-2 mb-6 items-end">
               <a href="/client/start_all" class="btn-success px-4 py-2 rounded-lg text-white font-medium">Start All</a>
               <a href="/client/stop_all" class="btn-danger px-4 py-2 rounded-lg text-white font-medium">Stop All</a>
               <a href="/client/restart_all" class="btn-warning px-4 py-2 rounded-lg text-white font-medium">Restart All</a>
+              
+              <!-- Compact Domain Update Form -->
+              <form action="/client/set_domain_all" method="post" onsubmit="return confirm('This will update the domain for ALL client configs and restart them. Are you sure?');" class="flex gap-2 items-end flex-grow">
+                <div class="flex-grow">
+                  <input type="text" id="new_domain" name="domain" required class="form-control px-3 py-2" placeholder="New Server Domain/IP">
+                </div>
+                <button type="submit" class="btn-primary px-4 py-2 rounded-lg text-white font-medium whitespace-nowrap">Set Domain & Restart All</button>
+              </form>
             </div>
             {{ if .Clients }}
               <select id="inner-client-select" class="form-control mb-4 block md:hidden" onchange="switchInnerTab('client', this.value)">
@@ -242,6 +259,7 @@
               <p class="text-gray-400">No clients found.</p>
             {{ end }}
           </div>
+
 
           <!-- Main Content: Servers -->
           <div id="main-content-servers" class="tab-content hidden">
@@ -302,6 +320,7 @@
     let currentFilters = {};
     const MAX_LOG_LINES = 200;
 
+
     function switchMainTab(tabName) {
       document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
@@ -309,6 +328,7 @@
       document.getElementById(`main-tab-${tabName}`).classList.add('active');
       document.getElementById('main-tab-select').value = tabName;
     }
+
 
     function switchInnerTab(prefix, tabName) {
       document.querySelectorAll(`.${prefix}-tab-content`).forEach(content => content.classList.add('hidden'));
@@ -318,6 +338,7 @@
       let select = document.getElementById(`inner-${prefix}-select`);
       if (select) select.value = tabName;
     }
+
 
     function cleanLogLine(line) {
         if (line.includes('[') && (line.includes(' [I] ') || line.includes(' [W] ') || line.includes(' [E] '))) {
@@ -329,6 +350,7 @@
         return line;
     }
 
+
     function applyFilters(prefix, name, level = null, btnElement = null) {
         const bufferKey = `${prefix}-${name}`;
         if (level && btnElement) {
@@ -338,10 +360,12 @@
             btnElement.classList.add('active');
         }
 
+
         const searchTerm = document.getElementById(`search-${prefix}-${name}`).value.toLowerCase();
         const logsElement = document.getElementById(`logs-${prefix}-${name}`);
         const buffer = logBuffers[bufferKey] || [];
         const activeLevel = currentFilters[bufferKey]?.level;
+
 
         const filteredLines = buffer.filter(line => {
             const lineLower = line.toLowerCase();
@@ -350,9 +374,11 @@
             return searchMatch && levelMatch;
         });
 
+
         logsElement.innerText = filteredLines.join('\n') || "No matching logs found.";
         logsElement.scrollTop = logsElement.scrollHeight;
     }
+
 
     function connectToLogStream(type, name) {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -361,11 +387,13 @@
         const logsElement = document.getElementById(`logs-${type}-${name}`);
         const bufferKey = `${type}-${name}`;
 
+
         ws.onopen = () => {
             console.log(`WebSocket connected for ${bufferKey}`);
             logBuffers[bufferKey] = [];
             logsElement.innerText = 'Log stream connected. Waiting for data...';
         };
+
 
         ws.onmessage = (event) => {
             const cleanedLine = cleanLogLine(event.data);
@@ -379,11 +407,13 @@
             applyFilters(type, name);
         };
 
+
         ws.onclose = () => {
             console.log(`WebSocket disconnected for ${bufferKey}. Reconnecting in 5s.`);
             logsElement.innerText += '\n\n[Stream disconnected. Reconnecting...]';
             setTimeout(() => connectToLogStream(type, name), 5000);
         };
+
 
         ws.onerror = (error) => {
             console.error(`WebSocket error for ${bufferKey}:`, error);
@@ -392,10 +422,12 @@
         };
     }
 
+
     window.addEventListener('DOMContentLoaded', () => {
         // Check if clients or servers exist
         const hasClients = document.querySelectorAll("pre[id^='logs-client-']").length > 0;
         const hasServers = document.querySelectorAll("pre[id^='logs-server-']").length > 0;
+
 
         // Determine initial main tab
         let initialMainTab = 'clients';
@@ -407,12 +439,14 @@
             initialMainTab = 'clients';
         }
 
+
         // Handle initial tab state from URL hash
         const hash = window.location.hash;
         if (hash) {
             const parts = hash.substring(1).split(':');
             const mainTab = parts[0];
             const innerTabName = parts[1];
+
 
             if (mainTab === 'clients' || mainTab === 'servers') {
                 if ((mainTab === 'clients' && hasClients) || (mainTab === 'servers' && hasServers)) {
@@ -434,11 +468,13 @@
             switchMainTab(initialMainTab);
         }
 
+
         // Connect to log streams for clients
         document.querySelectorAll("pre[id^='logs-client-']").forEach(pre => {
             const clientName = pre.id.replace("logs-client-", "");
             connectToLogStream('client', clientName);
         });
+
 
         // Connect to log streams for servers
         document.querySelectorAll("pre[id^='logs-server-']").forEach(pre => {
@@ -451,7 +487,7 @@
   document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('floating-icons-container');
     if (container) {
-      const techEmojis = ['💻', '🖥️', '💾', '💿', '🔌', '📡', '� satellite️', '🚀', '⚙️', '🔧', '🔬', '💡', '📈', '📊', '🔗', '🌐', '☁️', '⚡️', '🤖', '👾', '📱', '⌨️', '🖱️', '🔋', '🧠'];
+      const techEmojis = ['💻', '🖥️', '💾', '💿', '🔌', '📡', '🛰️', '🚀', '⚙️', '🔧', '🔬', '💡', '📈', '📊', '🔗', '🌐', '☁️', '⚡️', '🤖', '👾', '📱', '⌨️', '🖱️', '🔋', '🧠'];
       const iconCount = 6;
       let iconsHtml = '';
       for (let i = 0; i < iconCount; i++) {

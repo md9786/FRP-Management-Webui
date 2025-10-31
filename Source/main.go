@@ -172,6 +172,7 @@ func main() {
 		protected.GET("/client/start_all", clientStartAll)
 		protected.GET("/client/stop_all", clientStopAll)
 		protected.GET("/client/restart_all", clientRestartAll)
+		protected.POST("/client/set_domain_all", setAllClientDomains)
 		protected.GET("/client/edit/:name", clientEditForm)
 		protected.POST("/client/edit/:name", clientEdit)
 		protected.GET("/server/start/:name", serverStart)
@@ -1134,6 +1135,52 @@ func clientRestartAll(c *gin.Context) {
 		name := strings.TrimSuffix(filepath.Base(f), ".toml")
 		runCmd("systemctl", "restart", "frpc@"+name)
 	}
+	c.Redirect(http.StatusFound, "/manage-frp#clients")
+}
+
+func setAllClientDomains(c *gin.Context) {
+	newDomain := c.PostForm("domain")
+	if newDomain == "" {
+		c.String(http.StatusBadRequest, "Domain cannot be empty.")
+		return
+	}
+
+	log.Printf("Attempting to set domain to '%s' for all clients.", newDomain)
+
+	files, err := filepath.Glob(filepath.Join(ClientConfigDir, "*.toml"))
+	if err != nil {
+		log.Printf("Error finding client configs: %v", err)
+		c.String(http.StatusInternalServerError, "Could not read client configs.")
+		return
+	}
+
+	// Regex to find and replace the serverAddr line.
+	// It captures the part before the value (group 1) and the closing quote (group 2).
+	re := regexp.MustCompile(`(serverAddr\s*=\s*")[^"]*(")`)
+	replacement := []byte(fmt.Sprintf("${1}%s${2}", newDomain))
+
+	for _, file := range files {
+		content, err := ioutil.ReadFile(file)
+		if err != nil {
+			log.Printf("Failed to read config file %s: %v", file, err)
+			continue // Skip to the next file
+		}
+
+		newContent := re.ReplaceAll(content, replacement)
+
+		err = ioutil.WriteFile(file, newContent, 0644)
+		if err != nil {
+			log.Printf("Failed to write updated config to %s: %v", file, err)
+		}
+	}
+
+	log.Println("All client configs updated. Restarting all client services.")
+	// Now, restart all clients. This reuses the logic from clientRestartAll handler.
+	for _, f := range files {
+		name := strings.TrimSuffix(filepath.Base(f), ".toml")
+		runCmd("systemctl", "restart", "frpc@"+name)
+	}
+
 	c.Redirect(http.StatusFound, "/manage-frp#clients")
 }
 
