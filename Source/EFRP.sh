@@ -10,6 +10,16 @@ SCHEDULED_RESTART_INTERVAL_MINUTES=20 # How often to perform a scheduled restart
 RESTART_STABILIZE_SLEEP=3 # Time to wait after a restart for service to stabilize
 RESTART_WAIT_SECONDS=10 # Time to wait after reaching max restarts before trying again
 
+# --- Failover settings ---
+PRIMARY_DOMAIN="ares.orionnexus.top"        # main domain (matches your template)
+SECONDARY_DOMAIN="aresv6.orionnexus.top"    # set your secondary domain here
+FAILOVER_AFTER_RESTARTS=2                   # switch to secondary after this many consecutive error-based restarts on a service
+PRIMARY_RECHECK_MINUTES=10                  # probe primary every N minutes while on secondary
+
+STATE_DIR="/var/lib/frp-monitor"
+mkdir -p "$STATE_DIR"
+failover_flag_file="$STATE_DIR/failover_enabled.flag"
+
 # --- Functions ---
 
 # Function to log messages with a timestamp
@@ -51,6 +61,116 @@ restart_frp_service() {
     fi
 }
 
+# --- New helper functions for domain switching ---
+
+# Safely replace serverAddr in all configs to the provided domain
+set_domain_all_configs() {
+  local new_domain="$1"
+  log_message "Setting serverAddr to ${new_domain} in all configs"
+  # Create .bak backups; anchor to serverAddr key
+  sed -i.bak -E "s|^(serverAddr[[:space:]]*=[[:space:]]*\").*(\")|\1${new_domain}\2|g" "$CONFIG_DIR"/*.toml
+}
+
+# Validate configs if frpc has a verify command (optional safety)
+validate_configs_or_revert() {
+  if command -v frpc >/dev/null 2>&1; then
+    local ok=0
+    for f in "$CONFIG_DIR"/*.toml; do
+      if ! frpc verify -c "$f" >/dev/null 2>&1; then
+        log_message "Validation failed for $f, restoring from .bak"
+        cp -f "$f.bak" "$f"
+        ok=1
+      fi
+    done
+    return $ok
+  fi
+  return 0
+}
+
+# Restart all frpc@*.services
+restart_all_services() {
+  for config_file in "$CONFIG_DIR"/*.toml; do
+    [ -e "$config_file" ] || continue
+    local svc="$(basename "$config_file" .toml)"
+    restart_frp_service "$svc"
+  done
+}
+
+# Enable failover to SECONDARY_DOMAIN
+enable_failover() {
+  if [ -f "$failover_flag_file" ]; then
+    log_message "Failover already active; skipping switch."
+    return 0
+  fi
+  set_domain_all_configs "$SECONDARY_DOMAIN"
+  if ! validate_configs_or_revert; then
+    log_message "Failover validation failed; not switching domains."
+    return 1
+  fi
+  touch "$failover_flag_file"
+  log_message "Failover enabled; switched all configs to secondary domain."
+  restart_all_services
+  return 0
+}
+
+# Disable failover and switch back to PRIMARY_DOMAIN
+disable_failover() {
+  if [ ! -f "$failover_flag_file" ]; then
+    log_message "Failover not active; skipping revert."
+    return 0
+  fi
+  set_domain_all_configs "$PRIMARY_DOMAIN"
+  if ! validate_configs_or_revert; then
+    log_message "Primary validation failed; staying on secondary."
+    return 1
+  fi
+  rm -f "$failover_flag_file"
+  log_message "Failover disabled; switched all configs back to primary domain."
+  restart_all_services
+  return 0
+}
+
+# Probe primary domain health: temporarily switch one service to PRIMARY, restart it, and check logs
+probe_primary_health() {
+  # Pick the first config as probe
+  local probe_cfg
+  probe_cfg="$(ls "$CONFIG_DIR"/*.toml 2>/dev/null | head -n1)"
+  [ -n "$probe_cfg" ] || return 1
+  local probe_svc="$(basename "$probe_cfg" .toml)"
+
+  # Backup and switch only this file to PRIMARY
+  cp -f "$probe_cfg" "$probe_cfg.probe.bak"
+  sed -i -E "s|^(serverAddr[[:space:]]*=[[:space:]]*\").*(\")|\1${PRIMARY_DOMAIN}\2|g" "$probe_cfg"
+  if command -v frpc >/dev/null 2>&1; then
+    if ! frpc verify -c "$probe_cfg" >/dev/null 2>&1; then
+      log_message "Probe config validation failed; reverting probe file."
+      cp -f "$probe_cfg.probe.bak" "$probe_cfg"
+      rm -f "$probe_cfg.probe.bak"
+      return 1
+    fi
+  fi
+
+  # Restart the probe service
+  restart_frp_service "$probe_svc"
+
+  # Check for recent errors in the last 2 minutes
+  local err
+  err=$(journalctl -u "frpc@$probe_svc.service" --since "2 minutes ago" --no-pager | grep -E "$ERROR_STRING")
+  local ok=$?
+
+  # Revert probe file to original state
+  cp -f "$probe_cfg.probe.bak" "$probe_cfg"
+  rm -f "$probe_cfg.probe.bak"
+
+  if [ $ok -eq 0 ]; then
+    log_message "Primary probe detected errors; primary still unhealthy."
+    return 1
+  else
+    log_message "Primary probe shows healthy; primary appears good."
+    return 0
+  fi
+}
+
 # --- Main Script Logic ---
 
 # Ensure log file exists and is writable
@@ -88,6 +208,7 @@ if [ "$config_files_found" = false ]; then
 fi
 
 last_scheduled_restart_time=$(date +%s) # Initialize with current time in seconds since epoch
+last_primary_probe_time=0               # for periodic primary checks when in failover
 
 while true; do
     current_time=$(date +%s)
@@ -135,6 +256,14 @@ while true; do
             restart_counts["$service_name"]=$((restart_counts["$service_name"] + 1))
             log_message "Error-based restart attempt #${restart_counts["$service_name"]} for frpc@$service_name.service."
 
+            # If failover not active and threshold reached, switch all configs to secondary
+            if [ ! -f "$failover_flag_file" ] && [ "${restart_counts["$service_name"]}" -ge "$FAILOVER_AFTER_RESTARTS" ]; then
+                log_message "Threshold reached on $service_name; enabling failover to secondary domain."
+                if enable_failover; then
+                  last_primary_probe_time=$(date +%s)
+                fi
+            fi
+
             # Call the restart function
             restart_frp_service "$service_name"
             if [ $? -ne 0 ]; then
@@ -149,6 +278,20 @@ while true; do
             log_message "No error detected. frpc@$service_name.service appears to be running normally."
         fi
     done
+
+    # While in failover, periodically probe primary and revert if healthy
+    if [ -f "$failover_flag_file" ]; then
+      now=$(date +%s)
+      if (( now - last_primary_probe_time >= PRIMARY_RECHECK_MINUTES * 60 )); then
+        log_message "Probing primary domain availability."
+        if probe_primary_health; then
+          disable_failover
+        else
+          log_message "Primary still unhealthy; staying on secondary."
+        fi
+        last_primary_probe_time=$now
+      fi
+    fi
 
     # Wait before the next check for errors
     sleep "$CHECK_INTERVAL_SECONDS"
