@@ -93,12 +93,12 @@ type ConnectionStatus struct {
 // --- Global Variables ---
 
 var (
-	lastNetStats       map[string]net.IOCountersStat
-	lastNetTime        time.Time
-	sessions           = make(map[string]Session)
-	users              map[string]User
-	usersMutex         sync.RWMutex
-	upgrader           = websocket.Upgrader{
+	lastNetStats map[string]net.IOCountersStat
+	lastNetTime  time.Time
+	sessions     = make(map[string]Session)
+	users        map[string]User
+	usersMutex   sync.RWMutex
+	upgrader     = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
 			return true // Allow all origins for simplicity
 		},
@@ -831,7 +831,6 @@ func getSystemInfo() (*SystemInfo, error) {
 	}, nil
 }
 
-
 // --- Route Handlers ---
 
 func home(c *gin.Context) {
@@ -956,7 +955,6 @@ WantedBy=multi-user.target`
 	c.String(http.StatusOK, "FRP v"+version+" installed successfully")
 }
 
-
 func setupServer(c *gin.Context) {
 	serverFormName := c.PostForm("server_name")
 	if serverFormName == "" {
@@ -1065,7 +1063,7 @@ func setupClient(c *gin.Context) {
 	fmt.Fprintf(f, "transport.protocol = \"%s\"\n", transport)
 	fmt.Fprintf(f, "transport.tcpMux = %t\n", useMux)
 	fmt.Fprint(f, "transport.tcpMuxKeepaliveInterval = 10\n")
-	fmt.Fprint(f, "transport.dialServerTimeout = 10\n")
+	fmt.Fprint(f, "transport.dialServerTimeout = 30\n")
 	fmt.Fprint(f, "transport.dialServerKeepalive = 120\n")
 	fmt.Fprint(f, "transport.poolCount = 20\n")
 	fmt.Fprint(f, "transport.heartbeatInterval = 30\n")
@@ -1531,7 +1529,6 @@ func removeFRP(c *gin.Context) {
 	runCmd("systemctl", "daemon-reload")
 	c.String(http.StatusOK, "FRP completely removed from system.")
 }
-
 
 // --- Utility Functions ---
 
