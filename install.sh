@@ -113,5 +113,5 @@ fi
 
 # Get IP address
 ip=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v "127.0.0.1" | head -n 1) || { echo "Failed to get IP address"; exit 1; }
-echo "FRP Web-UI installed, you can access it using http://$ip:5000"
+echo "FRP Web-UI installed, you can access it using http://$ip:5001"
 echo "FRP Web-UI installed, you can access it using admin:admin"
