@@ -1068,7 +1068,7 @@ func setupClient(c *gin.Context) {
 	fmt.Fprint(f, "transport.poolCount = 20\n")
 	fmt.Fprint(f, "transport.heartbeatInterval = 30\n")
 	fmt.Fprint(f, "transport.heartbeatTimeout = 90\n")
-	fmt.Fprint(f, "transport.tls.enable = false\n")
+	fmt.Fprint(f, "transport.tls.enable = true\n")
 	fmt.Fprint(f, "transport.quic.keepalivePeriod = 10\n")
 	fmt.Fprint(f, "transport.quic.maxIdleTimeout = 30\n")
 	fmt.Fprint(f, "transport.quic.maxIncomingStreams = 100000\n")
