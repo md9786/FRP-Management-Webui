@@ -362,20 +362,69 @@
 
       if (!networkChart) {
         const ctx = document.getElementById('network-chart').getContext('2d');
+        
+        // Create Gradients
+        const uploadGradient = ctx.createLinearGradient(0, 0, 0, 300);
+        uploadGradient.addColorStop(0, 'rgba(192, 132, 252, 0.5)');
+        uploadGradient.addColorStop(1, 'rgba(192, 132, 252, 0.0)');
+
+        const downloadGradient = ctx.createLinearGradient(0, 0, 0, 300);
+        downloadGradient.addColorStop(0, 'rgba(74, 222, 128, 0.5)');
+        downloadGradient.addColorStop(1, 'rgba(74, 222, 128, 0.0)');
+
         networkChart = new Chart(ctx, {
           type: 'line',
           data: { labels, datasets: [
-            { label: 'Upload (KB/s)', data: uploadData, borderColor: 'rgba(192, 132, 252, 1)', backgroundColor: 'rgba(192, 132, 252, 0.2)', fill: true, tension: 0.4 },
-            { label: 'Download (KB/s)', data: downloadData, borderColor: 'rgba(74, 222, 128, 1)', backgroundColor: 'rgba(74, 222, 128, 0.2)', fill: true, tension: 0.4 }
+            { 
+              label: 'Upload (KB/s)', 
+              data: uploadData, 
+              borderColor: 'rgba(192, 132, 252, 1)', 
+              backgroundColor: uploadGradient, 
+              fill: true, 
+              tension: 0.4,
+              pointRadius: 0,
+              pointHoverRadius: 4
+            },
+            { 
+              label: 'Download (KB/s)', 
+              data: downloadData, 
+              borderColor: 'rgba(74, 222, 128, 1)', 
+              backgroundColor: downloadGradient, 
+              fill: true, 
+              tension: 0.4,
+              pointRadius: 0,
+              pointHoverRadius: 4
+            }
           ]},
           options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-              y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255, 255, 255, 0.1)' } },
-              x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255, 255, 255, 0.1)' } }
+              y: { 
+                beginAtZero: true, 
+                ticks: { color: '#94a3b8' }, 
+                grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+              },
+              x: { 
+                ticks: { color: '#94a3b8', maxTicksLimit: 8 }, 
+                grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+              }
             },
-            plugins: { legend: { labels: { color: '#e2e8f0' } } }
+            plugins: { 
+              legend: { labels: { color: '#e2e8f0' } },
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+                backgroundColor: 'rgba(0,0,0,0.8)',
+                titleColor: '#fff',
+                bodyColor: '#fff'
+              }
+            },
+            interaction: {
+              mode: 'nearest',
+              axis: 'x',
+              intersect: false
+            }
           }
         });
       } else {

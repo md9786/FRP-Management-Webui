@@ -109,7 +109,7 @@
   <div class="content-wrapper">
     <div class="container max-w-4xl mx-auto mt-8 p-4">
       <h1 class="text-2xl font-semibold text-gray-100 mb-4">Edit {{ .Type }} Config: {{ .Name }}</h1>
-      <form method="post" class="card p-6 shadow-lg">
+      <form id="edit-form" method="post" class="card p-6 shadow-lg">
         <div class="mb-4">
           <label for="name" class="form-label block text-sm font-medium mb-2">Config Name</label>
           <input type="text" id="name" name="name" value="{{ .Name }}" required class="form-control w-full p-3 text-sm" />
@@ -125,6 +125,52 @@
       </form>
     </div>
   </div>
+<script>
+    // Toast Notification System
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white z-50 transform transition-all duration-300 translate-y-[-100%] opacity-0 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
+        toast.style.backdropFilter = 'blur(10px)';
+        toast.innerText = message;
+        document.body.appendChild(toast);
+        
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-y-[-100%]', 'opacity-0');
+        });
+
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-y-[-20px]');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    document.getElementById('edit-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btn = this.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = 'Saving...';
+
+        try {
+            const formData = new FormData(this);
+            const response = await fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                showToast('Configuration saved successfully');
+            } else {
+                showToast('Failed to save configuration', 'error');
+            }
+        } catch (error) {
+            showToast('Network error occurred', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    });
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.globe.min.js"></script>

@@ -321,6 +321,24 @@
     </div>
   </div>
 <script>
+  // Toast Notification System
+  function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white z-50 transform transition-all duration-300 translate-y-[-100%] opacity-0 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
+      toast.style.backdropFilter = 'blur(10px)';
+      toast.innerText = message;
+      document.body.appendChild(toast);
+      
+      requestAnimationFrame(() => {
+          toast.classList.remove('translate-y-[-100%]', 'opacity-0');
+      });
+
+      setTimeout(() => {
+          toast.classList.add('opacity-0', 'translate-y-[-20px]');
+          setTimeout(() => toast.remove(), 300);
+      }, 3000);
+  }
+
   function switchMainTab(tabName) {
     document.querySelectorAll('.main-tab-content').forEach(content => content.classList.add('hidden'));
     document.querySelectorAll('.main-tab').forEach(tab => tab.classList.remove('active'));
@@ -359,8 +377,13 @@
 
   async function deleteClientPreset(name) {
     if (!confirm(`Delete client preset "${name}"?`)) return;
-    await fetch('/api/presets/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
-    loadClientPresets();
+    try {
+        await fetch('/api/presets/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+        showToast(`Client preset "${name}" deleted`);
+        loadClientPresets();
+    } catch(e) {
+        showToast('Failed to delete preset', 'error');
+    }
   }
 
   // --- Server Presets Management ---
@@ -384,8 +407,13 @@
   
   async function deleteServerPreset(name) {
     if (!confirm(`Delete server preset "${name}"?`)) return;
-    await fetch('/api/presets/server/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
-    loadServerPresets();
+    try {
+        await fetch('/api/presets/server/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+        showToast(`Server preset "${name}" deleted`);
+        loadServerPresets();
+    } catch(e) {
+        showToast('Failed to delete preset', 'error');
+    }
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -446,9 +474,14 @@
       e.preventDefault();
       const formData = new FormData(clientPresetMgmtForm);
       const data = { name: formData.get('name'), server_ip: formData.get('server_ip'), server_port: formData.get('server_port'), auth_token: formData.get('auth_token'), transport: formData.get('transport'), use_mux: formData.get('use_mux') === 'true' };
-      await fetch('/api/presets/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      clientPresetMgmtForm.reset();
-      loadClientPresets();
+      try {
+          await fetch('/api/presets/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+          showToast('Client preset saved successfully');
+          clientPresetMgmtForm.reset();
+          loadClientPresets();
+      } catch(e) {
+          showToast('Failed to save client preset', 'error');
+      }
     });
 
     // --- Server Presets Management ---
@@ -457,9 +490,14 @@
       e.preventDefault();
       const formData = new FormData(serverPresetMgmtForm);
       const data = { name: formData.get('name'), bind_port: formData.get('bind_port'), proto_choice: formData.get('proto_choice'), token: formData.get('token'), use_mux: formData.get('use_mux') === 'true' };
-      await fetch('/api/presets/server/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      serverPresetMgmtForm.reset();
-      loadServerPresets();
+      try {
+          await fetch('/api/presets/server/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+          showToast('Server preset saved successfully');
+          serverPresetMgmtForm.reset();
+          loadServerPresets();
+      } catch(e) {
+          showToast('Failed to save server preset', 'error');
+      }
     });
     
     // --- Initial Load for Preset Management Tab ---
@@ -484,12 +522,14 @@
         if (response.ok) {
           statusDiv.textContent = `Success: ${text}`;
           statusDiv.className = 'mt-6 p-4 rounded-lg bg-green-900 border border-green-700 text-sm';
+          showToast('FRP Installed/Updated successfully');
         } else {
           throw new Error(text || 'Installation failed with no message.');
         }
       } catch (error) {
         statusDiv.textContent = `Error: ${error.message}`;
         statusDiv.className = 'mt-6 p-4 rounded-lg bg-red-900 border border-red-700 text-sm';
+        showToast('Installation failed', 'error');
       } finally {
         installBtn.disabled = false;
         installBtn.textContent = 'Install/Update FRP';
@@ -513,12 +553,14 @@
         if (response.ok) {
           statusDiv.textContent = `Success: ${text}`;
           statusDiv.className = 'mt-6 p-4 rounded-lg bg-green-900 border border-green-700 text-sm';
+          showToast('FRP Uninstalled successfully');
         } else {
           throw new Error(text || 'Uninstallation failed with no message.');
         }
       } catch (error) {
          statusDiv.textContent = `Error: ${error.message}`;
          statusDiv.className = 'mt-6 p-4 rounded-lg bg-red-900 border border-red-700 text-sm';
+         showToast('Uninstallation failed', 'error');
       } finally {
         uninstallBtn.disabled = false;
         uninstallBtn.textContent = 'Uninstall FRP';

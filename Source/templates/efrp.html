@@ -79,6 +79,7 @@
     font-weight: 500;
     color: white;
     transition: transform 0.2s;
+    cursor: pointer;
   }
   .btn-primary:hover, .btn-success:hover, .btn-danger:hover, .btn-warning:hover, .btn-secondary:hover {
     transform: translateY(-2px);
@@ -128,8 +129,8 @@
           <h1 class="text-2xl font-semibold text-gray-100 mb-4">Manage EFRP</h1>
           <div class="card p-6 mb-4 shadow-lg">
             <div class="flex space-x-3 mb-3">
-              <a href="/efrp/start" class="btn-success px-4 py-2 text-white font-medium">Start</a>
-              <a href="/efrp/stop" class="btn-danger px-4 py-2 text-white font-medium">Stop</a>
+              <button onclick="performAction('/efrp/start')" class="btn-success px-4 py-2 text-white font-medium">Start</button>
+              <button onclick="performAction('/efrp/stop')" class="btn-danger px-4 py-2 text-white font-medium">Stop</button>
               <a href="/" class="btn-secondary px-4 py-2 text-gray-200 text-center">Back</a>
             </div>
             <h6 class="text-sm font-medium text-gray-400 mt-3">Live Logs</h6>
@@ -152,6 +153,37 @@
     let logBuffers = {};
     let currentFilters = {};
     const MAX_LOG_LINES = 200;
+
+    // Toast Notification System
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white z-50 transform transition-all duration-300 translate-y-[-100%] opacity-0 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
+        toast.style.backdropFilter = 'blur(10px)';
+        toast.innerText = message;
+        document.body.appendChild(toast);
+        
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-y-[-100%]', 'opacity-0');
+        });
+
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-y-[-20px]');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    async function performAction(url) {
+        try {
+            const res = await fetch(url);
+            if(res.ok) {
+                showToast('Action executed successfully');
+            } else {
+                showToast('Action failed', 'error');
+            }
+        } catch(e) {
+            showToast('Network error', 'error');
+        }
+    }
 
     function cleanLogLine(line) {
         if (line.includes('frpc[') && (line.includes(' [I] ') || line.includes(' [W] ') || line.includes(' [E] '))) {

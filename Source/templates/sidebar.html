@@ -30,6 +30,7 @@
     display: block;
     border-radius: 0.5rem;
     margin-bottom: 0.5rem;
+    border: 1px solid transparent; /* Placeholder to prevent layout shift */
   }
 
   /* Animated Border for Sidebar Links */
@@ -48,6 +49,13 @@
     pointer-events: none;
     /* White/Black Cycle for links */
     background: conic-gradient(from var(--angle), rgba(255,255,255,0.8), rgba(0,0,0,0.8), rgba(255,255,255,0.8));
+    opacity: 0; /* Hidden by default, shown on hover/active */
+    transition: opacity 0.3s ease;
+  }
+
+  .sidebar-link:hover::before,
+  .sidebar-link.active::before {
+    opacity: 1;
   }
 
   .sidebar-link:hover {
@@ -57,8 +65,15 @@
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   }
 
-  .sidebar-link:active {
+  .sidebar-link.active {
     background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar-link:active {
+    background: rgba(255, 255, 255, 0.2);
   }
 
   /* Mobile Toggle Button Styling */
@@ -99,7 +114,7 @@
       z-index: 50;
       width: 75%;
       max-width: 16rem;
-      background: rgba(0, 0, 0, 0.5); 
+      background: rgba(0, 0, 0, 0.85); 
     }
     .sidebar.open {
       transform: translateX(0);
@@ -144,5 +159,19 @@
     } else {
       hamburgerIcon.setAttribute('d', 'M4 6h16M4 12h16M4 18h16');
     }
+  });
+
+  // Highlight active link based on current URL
+  document.addEventListener('DOMContentLoaded', () => {
+    const currentPath = window.location.pathname;
+    const links = document.querySelectorAll('.sidebar-link');
+    
+    links.forEach(link => {
+      const href = link.getAttribute('href');
+      // Exact match or handles trailing slashes logic if needed
+      if (href === currentPath || (currentPath === '' && href === '/') || (href !== '/' && currentPath.startsWith(href))) {
+        link.classList.add('active');
+      }
+    });
   });
 </script>
