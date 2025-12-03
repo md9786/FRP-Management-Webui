@@ -6,181 +6,166 @@
   <title>Manage FRP</title>
   <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(180deg, #0f172a 0%, #0b0f1a 50%, #1e1b2e 100%);
-    color: #f1f5f9;
-    overflow-x: hidden; /* Prevent horizontal scrolling on body */
+  @property --angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
   }
-  .card { background: linear-gradient(135deg, #1e293b 0%, #111827 100%); }
-  .btn-primary { background: linear-gradient(90deg, #4338ca 0%, #312e81 100%); transition: background 0.2s ease, transform 0.2s ease; }
-  .btn-primary:hover { background: linear-gradient(90deg, #4f46e5 0%, #3730a3 100%); transform: translateY(-2px); }
-  .btn-success { background: linear-gradient(90deg, #16a34a 0%, #15803d 100%); transition: background 0.2s ease, transform 0.2s ease; }
-  .btn-success:hover { background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%); transform: translateY(-2px); }
-  .btn-danger { background: linear-gradient(90deg, #dc2626 0%, #991b1b 100%); transition: background 0.2s ease, transform 0.2s ease; }
-  .btn-danger:hover { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); transform: translateY(-2px); }
-  .btn-warning { background: linear-gradient(90deg, #d97706 0%, #b45309 100%); transition: background 0.2s ease, transform 0.2s ease; }
-  .btn-warning:hover { background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); transform: translateY(-2px); }
-  .btn-secondary { background: linear-gradient(90deg, #334155 0%, #1e293b 100%); transition: background 0.2s ease, transform 0.2s ease; }
-  .btn-secondary:hover { background: linear-gradient(90deg, #475569 0%, #334155 100%); transform: translateY(-2px); }
-  .log-pre { 
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
-    border: 1px solid #334155; 
+  @keyframes spin {
+    to { --angle: 360deg; }
+  }
+
+  body {
+    background-color: #080808;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    color: #f1f5f9;
+    min-height: 100vh;
+  }
+
+  #bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+  }
+
+  .content-wrapper { position: relative; z-index: 2; width: 100%; }
+
+  /* Common Liquid Glass Style & Animated Border Base */
+  .card, .btn-primary, .btn-success, .btn-danger, .btn-warning, .btn-secondary {
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border-radius: 1rem;
+    position: relative;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    border: none;
+    isolation: isolate;
+  }
+
+  /* Pseudo-element for border */
+  .card::before, 
+  .btn-primary::before, .btn-success::before, .btn-danger::before, .btn-warning::before, .btn-secondary::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    z-index: -1;
+    animation: spin 3s linear infinite;
+    pointer-events: none;
+  }
+
+  /* Card Colors: White/Black Cycle */
+  .card::before {
+    background: conic-gradient(from var(--angle), rgba(255,255,255,0.8), rgba(0,0,0,0.8), rgba(255,255,255,0.8));
+  }
+
+  /* Button Colors */
+  .btn-primary::before { background: conic-gradient(from var(--angle), #3b82f6, transparent, #3b82f6); }
+  .btn-success::before { background: conic-gradient(from var(--angle), #22c55e, transparent, #22c55e); }
+  .btn-danger::before { background: conic-gradient(from var(--angle), #ef4444, transparent, #ef4444); }
+  .btn-warning::before { background: conic-gradient(from var(--angle), #f59e0b, transparent, #f59e0b); }
+  .btn-secondary::before { background: conic-gradient(from var(--angle), #9ca3af, transparent, #9ca3af); }
+
+  .btn-primary, .btn-success, .btn-danger, .btn-warning, .btn-secondary {
+    display: inline-block;
+    text-align: center;
+    font-weight: 500;
+    color: white;
+    transition: transform 0.2s;
+    cursor: pointer;
+  }
+  .btn-primary:hover, .btn-success:hover, .btn-danger:hover, .btn-warning:hover, .btn-secondary:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Form Elements - More Defined Borders */
+  .log-pre, .form-control { 
+    background-color: rgba(0, 0, 0, 0.3); 
+    border: 1px solid rgba(255, 255, 255, 0.25); 
     color: #e2e8f0; 
+    backdrop-filter: blur(2px);
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 0.375rem;
+  }
+  .log-pre {
+    border-radius: 0.5rem;
     white-space: pre-wrap; 
     word-break: break-word; 
-    width: 100%; /* Ensure log fits container */
-    box-sizing: border-box; /* Include padding/border in width */
   }
-  .form-control { 
-    background-color: #1e293b; 
-    border: 1px solid #334155; 
-    color: #e2e8f0; 
-    width: 100%; /* Ensure input fits container */
-    box-sizing: border-box;
-    border-radius: 0.375rem; /* Rounded corners for dropdowns and inputs */
+  .form-control:focus {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 255, 255, 0.6); 
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
   }
+
+  /* Log Filters */
   .log-filter-btn { 
-    background-color: #334155; 
-    transition: background-color 0.2s ease; 
+    background-color: rgba(255, 255, 255, 0.05); 
+    border: 1px solid rgba(255,255,255,0.25);
+    transition: all 0.2s ease; 
+    color: #cbd5e1;
   }
-  .log-filter-btn:hover { background-color: #475569; }
+  .log-filter-btn:hover { background-color: rgba(255, 255, 255, 0.15); }
   .log-filter-btn.active { 
-    background-color: #4f46e5; 
+    background-color: rgba(255, 255, 255, 0.2); 
     font-weight: bold; 
     color: white; 
+    border-color: rgba(255, 255, 255, 0.6);
   }
-  .content-wrapper { 
-    position: relative; 
-    z-index: 2; 
-    width: 100%; /* Ensure wrapper fits viewport */
-  }
-  .floating-icons { 
-    position: absolute; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%; 
-    overflow: hidden; 
-    z-index: 1; 
-  }
-  .floating-icon { 
-    position: absolute; 
-    opacity: 0.05; 
-    font-size: 3rem; 
-    animation: float 6s ease-in-out infinite; 
-    color: #6366f1; 
-  }
-  .floating-icon:nth-child(1) { top: 40%; left: 80%; animation-delay: 0s; }
-  .floating-icon:nth-child(2) { top: 60%; left: 67%; animation-delay: 1s; }
-  .floating-icon:nth-child(3) { top: 40%; left: 54%; animation-delay: 2s; }
-  .floating-icon:nth-child(4) { top: 60%; left: 41%; animation-delay: 3s; }
-  .floating-icon:nth-child(5) { top: 40%; left: 28%; animation-delay: 4s; }
-  .floating-icon:nth-child(6) { top: 80%; left: 54%; animation-delay: 5s; }
-  /* Tab Styles */
+
+  /* Tabs */
   .tab, .inner-tab { 
-    border: 1px solid transparent; 
-    border-bottom: none; 
+    border-bottom: 2px solid transparent; 
     padding: 0.5rem 0.75rem; 
     cursor: pointer; 
     font-weight: 500; 
     color: #94a3b8; 
-    transition: color 0.2s, border-color 0.2s; 
+    transition: all 0.2s; 
     font-size: 0.875rem; 
-    flex: 1; /* Make tabs share space equally */
+    flex: 1; 
     text-align: center;
-    min-width: 0; /* Prevent tabs from forcing overflow */
+    min-width: 0; 
   }
   .tab:hover, .inner-tab:hover { color: #e2e8f0; }
   .tab.active, .inner-tab.active { 
     color: #f1f5f9; 
-    border-color: #334155; 
-    background-color: #1e293b; 
-    border-top-left-radius: 0.375rem; 
-    border-top-right-radius: 0.375rem; 
+    border-bottom-color: #3b82f6; 
   }
   .tab-content.hidden, .inner-tab-content.hidden { display: none; }
-  @keyframes float { 
-    0%, 100% { transform: translateY(0px) rotate(0deg); } 
-    50% { transform: translateY(-20px) rotate(5deg); } 
-  }
+  
   /* Responsive Adjustments */
   @media (max-width: 640px) {
-    main { 
-      padding: 1rem; 
-      width: 100%; /* Ensure main fits viewport */
-      box-sizing: border-box;
-    }
-    .max-w-4xl { 
-      max-width: 100%; 
-      width: 100%; /* Ensure container fits viewport */
-      margin: 0; /* Remove horizontal margins */
-    }
-    .tab, .inner-tab { 
-      padding: 0.4rem 0.5rem; 
-      font-size: 0.75rem; 
-      flex: 1 1 auto; /* Allow tabs to shrink */
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis; /* Truncate long tab names */
-    }
-    .log-pre { 
-      max-height: 200px; /* Smaller log height for mobile */
-      font-size: 0.7rem; 
-      padding: 0.5rem;
-    }
-    .form-control { 
-      font-size: 0.7rem; 
-      padding: 0.4rem; 
-    }
-    .log-filter-btn { 
-      padding: 0.25rem 0.4rem; 
-      font-size: 0.6rem; 
-    }
-    .flex-wrap.gap-2 { 
-      gap: 0.5rem; 
-      flex-direction: column; /* Stack buttons vertically */
-      align-items: stretch; /* Buttons take full width */
-    }
-    .flex-wrap.gap-2 form {
-      flex-direction: column;
-    }
-    .flex-wrap.gap-2 form .flex-grow {
-      width: 100%;
-    }
-    .btn-success, .btn-danger, .btn-warning, .btn-primary, .btn-secondary { 
-      padding: 0.4rem 0.75rem; 
-      font-size: 0.7rem; 
-      width: 100%; /* Full-width buttons */
-      text-align: center;
-    }
+    main { padding: 1rem; width: 100%; box-sizing: border-box; }
+    .max-w-4xl { max-width: 100%; width: 100%; margin: 0; }
+    .tab, .inner-tab { padding: 0.4rem 0.5rem; font-size: 0.75rem; flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .log-pre { max-height: 200px; font-size: 0.7rem; padding: 0.5rem; }
+    .form-control { font-size: 0.7rem; padding: 0.4rem; }
+    .log-filter-btn { padding: 0.25rem 0.4rem; font-size: 0.6rem; }
+    .flex-wrap.gap-2 { gap: 0.5rem; flex-direction: column; align-items: stretch; }
+    .flex-wrap.gap-2 form { flex-direction: column; }
+    .flex-wrap.gap-2 form .flex-grow { width: 100%; }
+    .btn-success, .btn-danger, .btn-warning, .btn-primary, .btn-secondary { padding: 0.4rem 0.75rem; font-size: 0.7rem; width: 100%; text-align: center; }
     h1 { font-size: 1.25rem; }
     h5 { font-size: 1rem; }
     h6 { font-size: 0.75rem; }
-    .floating-icon { font-size: 1.5rem; } /* Smaller floating icons */
-    nav[aria-label="Tabs"], nav[aria-label="Inner Tabs"] {
-      display: flex;
-      flex-wrap: nowrap; /* Prevent wrapping to avoid overflow */
-      overflow-x: auto; /* Allow scrolling if tabs exceed width */
-      width: 100%;
-      box-sizing: border-box;
-    }
-    .flex.md\\:flex-row { 
-      flex-direction: column; /* Stack input and filters vertically */
-      gap: 0.5rem;
-    }
-    .flex-shrink-0.space-x-1 { 
-      display: flex; 
-      flex-wrap: wrap; /* Allow filter buttons to wrap */
-      gap: 0.25rem; 
-      justify-content: center; 
-    }
+    nav[aria-label="Tabs"], nav[aria-label="Inner Tabs"] { display: flex; flex-wrap: nowrap; overflow-x: auto; width: 100%; box-sizing: border-box; }
+    .flex.md\\:flex-row { flex-direction: column; gap: 0.5rem; }
+    .flex-shrink-0.space-x-1 { display: flex; flex-wrap: wrap; gap: 0.25rem; justify-content: center; }
   }
 </style>
 </head>
 <body class="text-gray-100 min-h-screen">
-  <div class="floating-icons" id="floating-icons-container"></div>
-
+  <div id="bg"></div>
 
   <div class="content-wrapper">
     <div class="flex">
@@ -206,16 +191,16 @@
           <!-- Main Content: Clients -->
           <div id="main-content-clients" class="tab-content">
             <div class="flex flex-wrap gap-2 mb-6 items-end">
-              <a href="/client/start_all" class="btn-success px-4 py-2 rounded-lg text-white font-medium">Start All</a>
-              <a href="/client/stop_all" class="btn-danger px-4 py-2 rounded-lg text-white font-medium">Stop All</a>
-              <a href="/client/restart_all" class="btn-warning px-4 py-2 rounded-lg text-white font-medium">Restart All</a>
+              <button onclick="performAction('/client/start_all')" class="btn-success px-4 py-2 text-white font-medium">Start All</button>
+              <button onclick="performAction('/client/stop_all')" class="btn-danger px-4 py-2 text-white font-medium">Stop All</button>
+              <button onclick="performAction('/client/restart_all')" class="btn-warning px-4 py-2 text-white font-medium">Restart All</button>
               
               <!-- Compact Domain Update Form -->
               <form action="/client/set_domain_all" method="post" onsubmit="return confirm('This will update the domain for ALL client configs and restart them. Are you sure?');" class="flex gap-2 items-end flex-grow">
                 <div class="flex-grow">
                   <input type="text" id="new_domain" name="domain" required class="form-control px-3 py-2" placeholder="New Server Domain/IP">
                 </div>
-                <button type="submit" class="btn-primary px-4 py-2 rounded-lg text-white font-medium whitespace-nowrap">Set Domain & Restart All</button>
+                <button type="submit" class="btn-primary px-4 py-2 text-white font-medium whitespace-nowrap">Set Domain & Restart All</button>
               </form>
             </div>
             {{ if .Clients }}
@@ -233,17 +218,17 @@
               </div>
               {{ range $index, $client := .Clients }}
               <div id="content-client-{{ $client }}" class="inner-tab-content client-tab-content {{ if ne $index 0 }}hidden{{ end }}">
-                <div class="card rounded-xl p-6 shadow-lg">
+                <div class="card p-6 shadow-lg">
                   <h5 class="text-lg font-semibold text-gray-100 mb-3">{{ $client }}</h5>
                   <div class="flex flex-wrap gap-2 mb-3">
-                    <a href="/client/start/{{ $client }}" class="btn-success px-4 py-2 rounded-lg text-white font-medium">Start</a>
-                    <a href="/client/stop/{{ $client }}" class="btn-danger px-4 py-2 rounded-lg text-white font-medium">Stop</a>
-                    <a href="/client/restart/{{ $client }}" class="btn-warning px-4 py-2 rounded-lg text-white font-medium">Restart</a>
-                    <a href="/client/edit/{{ $client }}" class="btn-primary px-4 py-2 rounded-lg text-white font-medium">Edit Config</a>
+                    <button onclick="performAction('/client/start/{{ $client }}')" class="btn-success px-4 py-2 text-white font-medium">Start</button>
+                    <button onclick="performAction('/client/stop/{{ $client }}')" class="btn-danger px-4 py-2 text-white font-medium">Stop</button>
+                    <button onclick="performAction('/client/restart/{{ $client }}')" class="btn-warning px-4 py-2 text-white font-medium">Restart</button>
+                    <a href="/client/edit/{{ $client }}" class="btn-primary px-4 py-2 text-white font-medium">Edit Config</a>
                   </div>
                   <h6 class="text-sm font-medium text-gray-400 mt-3">Live Logs</h6>
                   <div class="flex flex-col md:flex-row md:items-center gap-3 my-3">
-                    <input type="text" placeholder="Search logs..." oninput="applyFilters('client', '{{ $client }}')" id="search-client-{{ $client }}" class="form-control w-full md:flex-1 px-2 py-1 rounded-md text-sm">
+                    <input type="text" placeholder="Search logs..." oninput="applyFilters('client', '{{ $client }}')" id="search-client-{{ $client }}" class="form-control w-full md:flex-1 px-2 py-1 text-sm">
                     <div class="flex-shrink-0 space-x-1">
                       <button onclick="applyFilters('client', '{{ $client }}', 'all', this)" class="log-filter-btn active px-2 py-1 text-xs rounded-md">All</button>
                       <button onclick="applyFilters('client', '{{ $client }}', '[I]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">INFO</button>
@@ -251,7 +236,7 @@
                       <button onclick="applyFilters('client', '{{ $client }}', '[E]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">ERROR</button>
                     </div>
                   </div>
-                  <pre id="logs-client-{{ $client }}" class="log-pre p-4 mt-2 rounded-lg text-sm" style="max-height: 300px; overflow-y: auto;">Connecting to log stream...</pre>
+                  <pre id="logs-client-{{ $client }}" class="log-pre p-4 mt-2 text-sm" style="max-height: 300px; overflow-y: auto;">Connecting to log stream...</pre>
                 </div>
               </div>
               {{ end }}
@@ -264,9 +249,9 @@
           <!-- Main Content: Servers -->
           <div id="main-content-servers" class="tab-content hidden">
             <div class="flex flex-wrap gap-2 mb-6">
-              <a href="/server/start_all" class="btn-success px-4 py-2 rounded-lg text-white font-medium">Start All</a>
-              <a href="/server/stop_all" class="btn-danger px-4 py-2 rounded-lg text-white font-medium">Stop All</a>
-              <a href="/server/restart_all" class="btn-warning px-4 py-2 rounded-lg text-white font-medium">Restart All</a>
+              <button onclick="performAction('/server/start_all')" class="btn-success px-4 py-2 text-white font-medium">Start All</button>
+              <button onclick="performAction('/server/stop_all')" class="btn-danger px-4 py-2 text-white font-medium">Stop All</button>
+              <button onclick="performAction('/server/restart_all')" class="btn-warning px-4 py-2 text-white font-medium">Restart All</button>
             </div>
             {{ if .Servers }}
               <select id="inner-server-select" class="form-control mb-4 block md:hidden" onchange="switchInnerTab('server', this.value)">
@@ -283,17 +268,17 @@
               </div>
               {{ range $index, $server := .Servers }}
               <div id="content-server-{{ $server }}" class="inner-tab-content server-tab-content {{ if ne $index 0 }}hidden{{ end }}">
-                <div class="card rounded-xl p-6 mb-4 shadow-lg">
+                <div class="card p-6 mb-4 shadow-lg">
                   <h5 class="text-lg font-semibold text-gray-100 mb-3">{{ $server }}</h5>
                   <div class="flex flex-wrap gap-2 mb-3">
-                    <a href="/server/start/{{ $server }}" class="btn-success px-4 py-2 rounded-lg text-white font-medium">Start</a>
-                    <a href="/server/stop/{{ $server }}" class="btn-danger px-4 py-2 rounded-lg text-white font-medium">Stop</a>
-                    <a href="/server/restart/{{ $server }}" class="btn-warning px-4 py-2 rounded-lg text-white font-medium">Restart</a>
-                    <a href="/server/edit/{{ $server }}" class="btn-primary px-4 py-2 rounded-lg text-white font-medium">Edit Config</a>
+                    <button onclick="performAction('/server/start/{{ $server }}')" class="btn-success px-4 py-2 text-white font-medium">Start</button>
+                    <button onclick="performAction('/server/stop/{{ $server }}')" class="btn-danger px-4 py-2 text-white font-medium">Stop</button>
+                    <button onclick="performAction('/server/restart/{{ $server }}')" class="btn-warning px-4 py-2 text-white font-medium">Restart</button>
+                    <a href="/server/edit/{{ $server }}" class="btn-primary px-4 py-2 text-white font-medium">Edit Config</a>
                   </div>
                   <h6 class="text-sm font-medium text-gray-400 mt-3">Live Logs</h6>
                   <div class="flex flex-col md:flex-row md:items-center gap-3 my-3">
-                    <input type="text" placeholder="Search logs..." oninput="applyFilters('server', '{{ $server }}')" id="search-server-{{ $server }}" class="form-control w-full md:flex-1 px-2 py-1 rounded-md text-sm">
+                    <input type="text" placeholder="Search logs..." oninput="applyFilters('server', '{{ $server }}')" id="search-server-{{ $server }}" class="form-control w-full md:flex-1 px-2 py-1 text-sm">
                     <div class="flex-shrink-0 space-x-1">
                       <button onclick="applyFilters('server', '{{ $server }}', 'all', this)" class="log-filter-btn active px-2 py-1 text-xs rounded-md">All</button>
                       <button onclick="applyFilters('server', '{{ $server }}', '[I]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">INFO</button>
@@ -301,7 +286,7 @@
                       <button onclick="applyFilters('server', '{{ $server }}', '[E]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">ERROR</button>
                     </div>
                   </div>
-                  <pre id="logs-server-{{ $server }}" class="log-pre p-4 mt-2 rounded-lg text-sm" style="max-height: 300px; overflow-y: auto;">Connecting to log stream...</pre>
+                  <pre id="logs-server-{{ $server }}" class="log-pre p-4 mt-2 text-sm" style="max-height: 300px; overflow-y: auto;">Connecting to log stream...</pre>
                 </div>
               </div>
               {{ end }}
@@ -310,7 +295,7 @@
             {{ end }}
           </div>
           
-          <a href="/" class="btn-secondary mt-6 px-4 py-2 rounded-lg text-gray-200 text-center inline-block">Back</a>
+          <a href="/" class="btn-secondary mt-6 px-4 py-2 text-gray-200 text-center inline-block">Back</a>
         </div>
       </main>
     </div>
@@ -320,6 +305,36 @@
     let currentFilters = {};
     const MAX_LOG_LINES = 200;
 
+    // Toast Notification System
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white z-50 transform transition-all duration-300 translate-y-[-100%] opacity-0 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
+        toast.style.backdropFilter = 'blur(10px)';
+        toast.innerText = message;
+        document.body.appendChild(toast);
+        
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-y-[-100%]', 'opacity-0');
+        });
+
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-y-[-20px]');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    async function performAction(url) {
+        try {
+            const res = await fetch(url);
+            if(res.ok) {
+                showToast('Action executed successfully');
+            } else {
+                showToast('Action failed', 'error');
+            }
+        } catch(e) {
+            showToast('Network error', 'error');
+        }
+    }
 
     function switchMainTab(tabName) {
       document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
@@ -336,12 +351,13 @@
       document.getElementById(`content-${prefix}-${tabName}`).classList.remove('hidden');
       document.getElementById(`tab-${prefix}-${tabName}`).classList.add('active');
       let select = document.getElementById(`inner-${prefix}-select`);
-      if (select) select.value = tabName;
+      if(select) select.value = tabName;
+      // Connect logs if not connected
+      connectToLogStream(prefix, tabName);
     }
 
-
     function cleanLogLine(line) {
-        if (line.includes('[') && (line.includes(' [I] ') || line.includes(' [W] ') || line.includes(' [E] '))) {
+        if (line.includes('frp') && (line.includes(' [I] ') || line.includes(' [W] ') || line.includes(' [E] '))) {
             const systemdTimestampMatch = line.match(/^[A-Za-z]{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+/);
             const systemdTimestamp = systemdTimestampMatch ? systemdTimestampMatch[0] : '';
             const cleanedLine = line.replace(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+\s+\[(I|W|E)\]\s+\[[^\]]+\]\s*/, ' [$1] ');
@@ -350,22 +366,19 @@
         return line;
     }
 
-
     function applyFilters(prefix, name, level = null, btnElement = null) {
-        const bufferKey = `${prefix}-${name}`;
+        const key = `${prefix}-${name}`;
         if (level && btnElement) {
-            currentFilters[bufferKey] = { ...currentFilters[bufferKey], level: level === 'all' ? null : level };
+            currentFilters[key] = { ...currentFilters[key], level: level === 'all' ? null : level };
             const buttonGroup = btnElement.parentElement;
             buttonGroup.querySelectorAll('.log-filter-btn').forEach(btn => btn.classList.remove('active'));
             btnElement.classList.add('active');
         }
 
-
-        const searchTerm = document.getElementById(`search-${prefix}-${name}`).value.toLowerCase();
-        const logsElement = document.getElementById(`logs-${prefix}-${name}`);
-        const buffer = logBuffers[bufferKey] || [];
-        const activeLevel = currentFilters[bufferKey]?.level;
-
+        const searchTerm = document.getElementById(`search-${key}`).value.toLowerCase();
+        const logsElement = document.getElementById(`logs-${key}`);
+        const buffer = logBuffers[key] || [];
+        const activeLevel = currentFilters[key]?.level;
 
         const filteredLines = buffer.filter(line => {
             const lineLower = line.toLowerCase();
@@ -374,129 +387,87 @@
             return searchMatch && levelMatch;
         });
 
-
         logsElement.innerText = filteredLines.join('\n') || "No matching logs found.";
         logsElement.scrollTop = logsElement.scrollHeight;
     }
 
+    let wsConnections = {};
 
-    function connectToLogStream(type, name) {
+    function connectToLogStream(prefix, name) {
+        const key = `${prefix}-${name}`;
+        if (wsConnections[key]) return; // Already connected
+
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/ws/logs/${type}/${name}`;
+        // URL pattern: /ws/logs/{type}/{name}
+        const wsUrl = `${protocol}//${window.location.host}/ws/logs/${prefix}/${name}`;
         const ws = new WebSocket(wsUrl);
-        const logsElement = document.getElementById(`logs-${type}-${name}`);
-        const bufferKey = `${type}-${name}`;
-
+        const logsElement = document.getElementById(`logs-${key}`);
+        wsConnections[key] = ws;
 
         ws.onopen = () => {
-            console.log(`WebSocket connected for ${bufferKey}`);
-            logBuffers[bufferKey] = [];
+            console.log(`WebSocket connected for ${key}`);
+            logBuffers[key] = [];
             logsElement.innerText = 'Log stream connected. Waiting for data...';
         };
 
-
         ws.onmessage = (event) => {
             const cleanedLine = cleanLogLine(event.data);
-            if (!logBuffers[bufferKey]) {
-                logBuffers[bufferKey] = [];
+            if (!logBuffers[key]) {
+                logBuffers[key] = [];
             }
-            logBuffers[bufferKey].push(cleanedLine);
-            if (logBuffers[bufferKey].length > MAX_LOG_LINES) {
-                logBuffers[bufferKey].shift();
+            logBuffers[key].push(cleanedLine);
+            if (logBuffers[key].length > MAX_LOG_LINES) {
+                logBuffers[key].shift();
             }
-            applyFilters(type, name);
+            applyFilters(prefix, name);
         };
-
 
         ws.onclose = () => {
-            console.log(`WebSocket disconnected for ${bufferKey}. Reconnecting in 5s.`);
+            console.log(`WebSocket disconnected for ${key}. Reconnecting in 5s.`);
             logsElement.innerText += '\n\n[Stream disconnected. Reconnecting...]';
-            setTimeout(() => connectToLogStream(type, name), 5000);
+            wsConnections[key] = null;
+            setTimeout(() => connectToLogStream(prefix, name), 5000);
         };
 
-
         ws.onerror = (error) => {
-            console.error(`WebSocket error for ${bufferKey}:`, error);
+            console.error(`WebSocket error for ${key}:`, error);
             logsElement.innerText += '\n\n[An error occurred with the log stream.]';
             ws.close();
         };
     }
 
-
     window.addEventListener('DOMContentLoaded', () => {
-        // Check if clients or servers exist
-        const hasClients = document.querySelectorAll("pre[id^='logs-client-']").length > 0;
-        const hasServers = document.querySelectorAll("pre[id^='logs-server-']").length > 0;
-
-
-        // Determine initial main tab
-        let initialMainTab = 'clients';
-        if (!hasClients && hasServers) {
-            initialMainTab = 'servers';
-        } else if (!hasServers && hasClients) {
-            initialMainTab = 'clients';
-        } else if (!hasClients && !hasServers) {
-            initialMainTab = 'clients';
-        }
-
-
-        // Handle initial tab state from URL hash
-        const hash = window.location.hash;
-        if (hash) {
-            const parts = hash.substring(1).split(':');
-            const mainTab = parts[0];
-            const innerTabName = parts[1];
-
-
-            if (mainTab === 'clients' || mainTab === 'servers') {
-                if ((mainTab === 'clients' && hasClients) || (mainTab === 'servers' && hasServers)) {
-                    switchMainTab(mainTab);
-                    if (innerTabName) {
-                        const prefix = mainTab.slice(0, -1);
-                        const innerTabElement = document.getElementById(`tab-${prefix}-${innerTabName}`);
-                        if (innerTabElement) {
-                            switchInnerTab(prefix, innerTabName);
-                        }
-                    }
-                } else {
-                    switchMainTab(initialMainTab);
-                }
-            } else {
-                switchMainTab(initialMainTab);
-            }
-        } else {
-            switchMainTab(initialMainTab);
-        }
-
-
-        // Connect to log streams for clients
-        document.querySelectorAll("pre[id^='logs-client-']").forEach(pre => {
-            const clientName = pre.id.replace("logs-client-", "");
-            connectToLogStream('client', clientName);
-        });
-
-
-        // Connect to log streams for servers
-        document.querySelectorAll("pre[id^='logs-server-']").forEach(pre => {
-            const serverName = pre.id.replace("logs-server-", "");
-            connectToLogStream('server', serverName);
-        });
+        // Init active tabs logs
+        {{ if .Clients }}
+           {{ range $index, $client := .Clients }}
+             {{ if eq $index 0 }} connectToLogStream('client', '{{ $client }}'); {{ end }}
+           {{ end }}
+        {{ end }}
+        {{ if .Servers }}
+           {{ range $index, $server := .Servers }}
+             {{ if eq $index 0 }} connectToLogStream('server', '{{ $server }}'); {{ end }}
+           {{ end }}
+        {{ end }}
     });
 </script>
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const container = document.getElementById('floating-icons-container');
-    if (container) {
-      const techEmojis = ['💻', '🖥️', '💾', '💿', '🔌', '📡', '🛰️', '🚀', '⚙️', '🔧', '🔬', '💡', '📈', '📊', '🔗', '🌐', '☁️', '⚡️', '🤖', '👾', '📱', '⌨️', '🖱️', '🔋', '🧠'];
-      const iconCount = 6;
-      let iconsHtml = '';
-      for (let i = 0; i < iconCount; i++) {
-        const randomEmoji = techEmojis[Math.floor(Math.random() * techEmojis.length)];
-        iconsHtml += `<div class="floating-icon">${randomEmoji}</div>`;
-      }
-      container.innerHTML = iconsHtml;
-    }
-  });
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.globe.min.js"></script>
+    <script>
+        VANTA.GLOBE({
+  el: "#bg",
+  mouseControls: false,
+  touchControls: false,
+  gyroControls: false,
+  minHeight: 200.00,
+  minWidth: 200.00,
+  scale: 1.00,
+  scaleMobile: 1.00,
+  color: 0x697ca0,
+  color2: 0xf21d1d,
+  size: 1.20,
+  backgroundColor: 0x0
+})
 </script>
 </body>
 </html>

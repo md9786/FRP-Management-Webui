@@ -6,57 +6,98 @@
   <title>FRP Status</title>
   <script src="https://cdn.tailwindcss.com"></script>
 <style>
+  @property --angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+  }
+  @keyframes spin {
+    to { --angle: 360deg; }
+  }
+
   body {
+    background-color: #080808;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(180deg, #0f172a 0%, #0b0f1a 50%, #1e1b2e 100%);
     color: #f1f5f9;
   }
 
-  .card {
-    background: linear-gradient(90deg, #1e293b 0%, #111827 100%);
-    border-radius: 0.375rem;
-    color: #e5e7eb;
-  }
-
-  .btn-secondary {
-    background: linear-gradient(90deg, #4b4b4b 0%, #3a3a3a 100%);
-    transition: background 0.2s ease, transform 0.2s ease;
-    color: #f1f5f9;
-    border-radius: 0.375rem;
-  }
-
-  .btn-secondary:hover {
-    background: linear-gradient(90deg, #5b5b5b 0%, #4a4a4a 100%);
-    transform: translateY(-2px);
-  }
-
-  .btn-secondary:active {
-    background: linear-gradient(90deg, #6b6b6b 0%, #5a5a5a 100%);
-  }
-
-  .log-pre {
-    background-color: #2d2d4b;
-    border: 1px solid #334155;
-    color: #e5e7eb;
-    white-space: pre-wrap;
-    word-break: break-word;
+  #bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
   }
 
   .content-wrapper { position: relative; z-index: 2; }
-  .floating-icons { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 1; }
-  .floating-icon { position: absolute; opacity: 0.05; font-size: 6rem; animation: float 6s ease-in-out infinite; color: #6366f1; }
-  .floating-icon:nth-child(1) { top: 40%; left: 80%; animation-delay: 0s; }
-  .floating-icon:nth-child(2) { top: 60%; left: 67%; animation-delay: 1s; }
-  .floating-icon:nth-child(3) { top: 40%; left: 54%; animation-delay: 2s; }
-  .floating-icon:nth-child(4) { top: 60%; left: 41%; animation-delay: 3s; }
-  .floating-icon:nth-child(5) { top: 40%; left: 28%; animation-delay: 4s; }
-  .floating-icon:nth-child(6) { top: 80%; left: 54%; animation-delay: 5s; }
-  @keyframes float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
+
+  /* Common Liquid Glass Style & Animated Border Base */
+  .card, .btn-primary, .btn-success, .btn-danger, .btn-warning, .btn-secondary {
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border-radius: 1rem;
+    position: relative;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    border: none;
+    isolation: isolate;
+  }
+
+  /* Pseudo-element for border */
+  .card::before, 
+  .btn-primary::before, .btn-success::before, .btn-danger::before, .btn-warning::before, .btn-secondary::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    z-index: -1;
+    animation: spin 3s linear infinite;
+    pointer-events: none;
+  }
+
+  /* Card Colors: White/Black Cycle */
+  .card::before {
+    background: conic-gradient(from var(--angle), rgba(255,255,255,0.8), rgba(0,0,0,0.8), rgba(255,255,255,0.8));
+  }
+
+  /* Button Colors */
+  .btn-primary::before { background: conic-gradient(from var(--angle), #3b82f6, transparent, #3b82f6); }
+  .btn-success::before { background: conic-gradient(from var(--angle), #22c55e, transparent, #22c55e); }
+  .btn-danger::before { background: conic-gradient(from var(--angle), #ef4444, transparent, #ef4444); }
+  .btn-warning::before { background: conic-gradient(from var(--angle), #f59e0b, transparent, #f59e0b); }
+  .btn-secondary::before { background: conic-gradient(from var(--angle), #9ca3af, transparent, #9ca3af); }
+
+  .btn-primary, .btn-success, .btn-danger, .btn-warning, .btn-secondary {
+    display: inline-block;
+    text-align: center;
+    font-weight: 500;
+    color: white;
+    transition: transform 0.2s;
+  }
+  .btn-primary:hover, .btn-success:hover, .btn-danger:hover, .btn-warning:hover, .btn-secondary:hover {
+    transform: translateY(-2px);
+  }
+
+  .log-pre {
+    background: rgba(0, 0, 0, 0.3); 
+    border: 1px solid rgba(255, 255, 255, 0.25); 
+    color: #e2e8f0; 
+    backdrop-filter: blur(4px);
+    white-space: pre-wrap;
+    word-break: break-word;
+    border-radius: 0.5rem;
+  }
 </style>
 
 </head>
 <body class="text-gray-100 min-h-screen">
-  <div class="floating-icons" id="floating-icons-container"></div>
+  <div id="bg"></div>
   <div class="content-wrapper">
     <div class="flex">
       <!-- Sidebar -->
@@ -66,18 +107,18 @@
       <div class="flex-1 p-8">
         <div class="max-w-4xl mx-auto">
           <h1 class="text-2xl font-semibold text-gray-100 mb-4">FRP Status</h1>
-          <div class="card rounded-xl p-6 mb-4 shadow-lg">
+          <div class="card p-6 mb-4 shadow-lg">
             <h5 class="text-lg font-semibold text-gray-100 mb-3">Version</h5>
-            <pre id="version" class="log-pre p-4 mb-4 rounded-lg text-sm">{{ .Version }}</pre>
+            <pre id="version" class="log-pre p-4 mb-4 text-sm">{{ .Version }}</pre>
             <h5 class="text-lg font-semibold text-gray-100 mb-3">Running Services</h5>
-            <pre id="running" class="log-pre p-4 mb-4 rounded-lg text-sm">{{ .Running }}</pre>
+            <pre id="running" class="log-pre p-4 mb-4 text-sm">{{ .Running }}</pre>
             <h5 class="text-lg font-semibold text-gray-100 mb-3">Enabled Services</h5>
-            <pre id="enabled" class="log-pre p-4 mb-4 rounded-lg text-sm">{{ .Enabled }}</pre>
+            <pre id="enabled" class="log-pre p-4 mb-4 text-sm">{{ .Enabled }}</pre>
             <h5 class="text-lg font-semibold text-gray-100 mb-3">Server Configs</h5>
-            <pre id="server-configs" class="log-pre p-4 mb-4 rounded-lg text-sm">{{ .ServerConfigs }}</pre>
+            <pre id="server-configs" class="log-pre p-4 mb-4 text-sm">{{ .ServerConfigs }}</pre>
             <h5 class="text-lg font-semibold text-gray-100 mb-3">Client Configs</h5>
-            <pre id="client-configs" class="log-pre p-4 mb-4 rounded-lg text-sm">{{ .ClientConfigs }}</pre>
-            <a href="/" class="btn-secondary px-4 py-2 rounded-lg text-gray-200 text-center inline-block">Back</a>
+            <pre id="client-configs" class="log-pre p-4 mb-4 text-sm">{{ .ClientConfigs }}</pre>
+            <a href="/" class="btn-secondary px-4 py-2 text-gray-200 text-center inline-block">Back</a>
           </div>
         </div>
       </div>
@@ -115,20 +156,24 @@
       });
     };
   </script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const container = document.getElementById('floating-icons-container');
-      if (container) {
-        const techEmojis = ['💻', '🖥️', '💾', '💿', '🔌', '📡', '🛰️', '🚀', '⚙️', '🔧', '🔬', '💡', '📈', '📊', '🔗', '🌐', '☁️', '⚡️', '🤖', '👾', '📱', '⌨️', '🖱️', '🔋', '🧠'];
-        const iconCount = 6; // As per the CSS
-        let iconsHtml = '';
-        for (let i = 0; i < iconCount; i++) {
-          const randomEmoji = techEmojis[Math.floor(Math.random() * techEmojis.length)];
-          iconsHtml += `<div class="floating-icon">${randomEmoji}</div>`;
-        }
-        container.innerHTML = iconsHtml;
-      }
-    });
-  </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.globe.min.js"></script>
+    <script>
+        VANTA.GLOBE({
+  el: "#bg",
+  mouseControls: false,
+  touchControls: false,
+  gyroControls: false,
+  minHeight: 200.00,
+  minWidth: 200.00,
+  scale: 1.00,
+  scaleMobile: 1.00,
+  color: 0x697ca0,
+  color2: 0xf21d1d,
+  size: 1.20,
+  backgroundColor: 0x0
+})
+</script>
 </body>
 </html>

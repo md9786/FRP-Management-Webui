@@ -6,90 +6,130 @@
   <title>FRP Management - Login</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+  @property --angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+  }
+  @keyframes spin {
+    to { --angle: 360deg; }
+  }
+
   body {
+    background-color: #080808;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(180deg, #0f172a 0%, #0b0f1a 50%, #1e1b2e 100%);
     color: #f1f5f9;
   }
 
-  .login-card {
-    background: linear-gradient(135deg, #1e293b 0%, #111827 100%);
-    backdrop-filter: blur(10px);
-    border: 1px solid #334155;
+  #bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
   }
 
-  .form-control {
-    background-color: #1e293b;
-    border: 1px solid #334155;
-    color: #e2e8f0;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  /* Liquid Glass + Border Animation Base */
+  .login-card, .btn-primary {
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border-radius: 1rem;
+    position: relative;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    border: none;
+    isolation: isolate;
   }
-  .form-control:focus {
-    background-color: #1e293b;
-    border-color: #6366f1; /* indigo accent */
-    color: #f1f5f9;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+
+  /* Animated Border Pseudo-element */
+  .login-card::before, .btn-primary::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    z-index: -1;
+    animation: spin 3s linear infinite;
+    pointer-events: none;
   }
-  .form-control::placeholder {
-    color: #94a3b8;
+
+  /* Card Colors */
+  .login-card::before {
+    background: conic-gradient(from var(--angle), rgba(255,255,255,0.8), rgba(0,0,0,0.8), rgba(255,255,255,0.8));
+  }
+
+  /* Button Colors */
+  .btn-primary::before {
+    background: conic-gradient(from var(--angle), #3b82f6, transparent, #3b82f6);
   }
 
   .btn-primary {
-    background: linear-gradient(90deg, #334155 0%, #1e293b 100%);
-    transition: background 0.2s ease, transform 0.2s ease;
-    border: none;
-    color: #f1f5f9;
+    color: white;
+    font-weight: 600;
+    transition: transform 0.2s;
   }
   .btn-primary:hover {
-    background: linear-gradient(90deg, #475569 0%, #334155 100%);
     transform: translateY(-2px);
   }
-  .btn-primary:active {
-    background: linear-gradient(90deg, #64748b 0%, #475569 100%);
+
+  /* Form Elements - More Defined Borders */
+  .form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    color: #e2e8f0; 
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 0.5rem;
+    backdrop-filter: blur(2px);
+    transition: all 0.3s ease;
   }
 
-  .error-alert {
-    background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%);
-    border: 1px solid #f87171;
-    color: #fff;
+  .form-control:focus {
+    outline: none;
+    border-color: rgba(59, 130, 246, 0.6);
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
   }
-  
-  .success-alert {
-    background: linear-gradient(90deg, #16a34a 0%, #15803d 100%);
-    border: 1px solid #4ade80;
-    color: #fff;
+  .form-control::placeholder {
+    color: #64748b;
   }
+
+  /* Alerts */
+  .alert {
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(2px);
+    border-radius: 0.5rem;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+  .error-alert { border-color: rgba(220, 38, 38, 0.5); color: #fca5a5; }
+  .success-alert { border-color: rgba(22, 163, 74, 0.5); color: #86efac; }
 
   .content-wrapper { position: relative; z-index: 2; }
-  .floating-icons { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 1; }
-  .floating-icon { position: absolute; opacity: 0.05; font-size: 6rem; animation: float 6s ease-in-out infinite; color: #6366f1; }
-  .floating-icon:nth-child(1) { top: 40%; left: 80%; animation-delay: 0s; }
-  .floating-icon:nth-child(2) { top: 60%; left: 67%; animation-delay: 1s; }
-  .floating-icon:nth-child(3) { top: 40%; left: 54%; animation-delay: 2s; }
-  .floating-icon:nth-child(4) { top: 60%; left: 41%; animation-delay: 3s; }
-  .floating-icon:nth-child(5) { top: 40%; left: 28%; animation-delay: 4s; }
-  .floating-icon:nth-child(6) { top: 80%; left: 54%; animation-delay: 5s; }
-  @keyframes float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
 
 </style>
 
 </head>
 <body class="text-gray-100 min-h-screen flex items-center justify-center">
-  <div class="floating-icons" id="floating-icons-container"></div>
+  <div id="bg"></div>
 
   <!-- Login Container -->
   <div class="content-wrapper w-full max-w-md px-6">
-    <div class="login-card rounded-2xl p-8 shadow-2xl">
+    <div class="login-card p-8">
       <!-- Header -->
       <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-purple-300 mb-2">FRP Management</h1>
+        <h1 class="text-3xl font-bold text-white mb-2" style="text-shadow: 0 2px 4px rgba(0,0,0,0.3);">FRP Management</h1>
         <p class="text-gray-400">Sign in to access your dashboard</p>
       </div>
       
       <!-- Success Alert -->
       {{ if .Message }}
-      <div class="success-alert rounded-lg p-3 mb-6 text-sm text-white">
+      <div class="alert success-alert p-3 mb-6 text-sm">
         <div class="flex items-center">
           <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
@@ -101,7 +141,7 @@
 
       <!-- Error Alert -->
       {{ if .Error }}
-      <div class="error-alert rounded-lg p-3 mb-6 text-sm text-white">
+      <div class="alert error-alert p-3 mb-6 text-sm">
         <div class="flex items-center">
           <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
@@ -119,7 +159,7 @@
             type="text" 
             id="username" 
             name="username" 
-            class="form-control w-full px-4 py-3 rounded-lg"
+            class="form-control"
             placeholder="Enter your username"
             required
             autofocus
@@ -132,7 +172,7 @@
             type="password" 
             id="password" 
             name="password" 
-            class="form-control w-full px-4 py-3 rounded-lg"
+            class="form-control"
             placeholder="Enter your password"
             required
           >
@@ -140,14 +180,14 @@
 
         <button 
           type="submit" 
-          class="btn-primary w-full px-4 py-3 rounded-lg text-white font-medium text-lg"
+          class="btn-primary w-full px-4 py-3 text-lg"
         >
           Sign In
         </button>
       </form>
 
       <!-- Footer -->
-      <div class="text-center mt-8 pt-6 border-t border-gray-600">
+      <div class="text-center mt-8 pt-6 border-t border-gray-700/50">
         <p class="text-xs text-gray-500">
           Secure access to FRP Management System
         </p>
@@ -156,51 +196,44 @@
   </div>
 
   <script>
-    // Add some interactive effects
-    document.addEventListener('DOMContentLoaded', function() {
-      // Focus animation
-      const inputs = document.querySelectorAll('.form-control');
-      inputs.forEach(input => {
-        input.addEventListener('focus', function() {
-          this.parentElement.style.transform = 'translateY(-2px)';
+    // Form submission loading state
+    const form = document.querySelector('form');
+    const submitBtn = document.querySelector('button[type="submit"]');
+    
+    if(form && submitBtn) {
+        form.addEventListener('submit', function() {
+          submitBtn.innerText = 'Signing In...';
+          submitBtn.style.opacity = '0.8';
+          submitBtn.disabled = true;
         });
-        
-        input.addEventListener('blur', function() {
-          this.parentElement.style.transform = 'translateY(0)';
-        });
-      });
-
-      // Form submission loading state
-      const form = document.querySelector('form');
-      const submitBtn = document.querySelector('button[type="submit"]');
-      
-      form.addEventListener('submit', function() {
-        submitBtn.innerHTML = 'Signing In...';
-        submitBtn.disabled = true;
-      });
-    });
+    }
 
     // Keyboard shortcuts
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Enter' && e.ctrlKey) {
-        document.querySelector('form').submit();
+        const f = document.querySelector('form');
+        if(f) f.submit();
       }
     });
   </script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const container = document.getElementById('floating-icons-container');
-      if (container) {
-        const techEmojis = ['💻', '🖥️', '💾', '💿', '🔌', '📡', '🛰️', '🚀', '⚙️', '🔧', '🔬', '💡', '📈', '📊', '🔗', '🌐', '☁️', '⚡️', '🤖', '👾', '📱', '⌨️', '🖱️', '🔋', '🧠'];
-        const iconCount = 6; // As per the CSS
-        let iconsHtml = '';
-        for (let i = 0; i < iconCount; i++) {
-          const randomEmoji = techEmojis[Math.floor(Math.random() * techEmojis.length)];
-          iconsHtml += `<div class="floating-icon">${randomEmoji}</div>`;
-        }
-        container.innerHTML = iconsHtml;
-      }
-    });
-  </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.globe.min.js"></script>
+    <script>
+        VANTA.GLOBE({
+  el: "#bg",
+  mouseControls: false,
+  touchControls: false,
+  gyroControls: false,
+  minHeight: 200.00,
+  minWidth: 200.00,
+  scale: 1.00,
+  scaleMobile: 1.00,
+  color: 0x697ca0,
+  color2: 0xf21d1d,
+  size: 1.20,
+  backgroundColor: 0x0
+})
+</script>
 </body>
 </html>

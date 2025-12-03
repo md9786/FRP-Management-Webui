@@ -6,212 +6,165 @@
   <title>Setup & Presets</title>
   <script src="https://cdn.tailwindcss.com"></script>
 <style>
+  @property --angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+  }
+  @keyframes spin {
+    to { --angle: 360deg; }
+  }
+
   body {
+  background-color: #080808;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(180deg, #0f172a 0%, #0b0f1a 50%, #1e1b2e 100%);
-    color: #f1f5f9;
-    overflow-x: hidden; /* Prevent horizontal scrolling on body */
+    color: #080808;
+    overflow-x: hidden;
   }
-  .form-container, .container-card { 
-    background: linear-gradient(135deg, #1e293b 0%, #111827 100%); 
-    border: 1px solid #334155; 
+
+  #bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+  }
+
+  .content-wrapper { position: relative; z-index: 2; width: 100%; }
+
+  /* Common Liquid Glass Style & Animated Border Base */
+  .form-container, .container-card, .btn-primary, .btn-success, .btn-danger, .btn-warning, .btn-secondary {
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border-radius: 1rem;
+    position: relative;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    border: none;
+    isolation: isolate;
+  }
+  
+  .form-container, .container-card {
     padding: 1.5rem; 
-    border-radius: 0.75rem; 
-    width: 100%; /* Ensure full width */
+    width: 100%;
     box-sizing: border-box;
+    color: #f1f5f9; /* Ensure text is light */
   }
-  .btn-primary { 
-    background: linear-gradient(90deg, #334155 0%, #1e293b 100%); 
-    transition: background 0.2s ease, transform 0.2s ease; 
-    color: #f1f5f9; 
-    border: none; 
+
+  /* Pseudo-element for border */
+  .form-container::before, .container-card::before, 
+  .btn-primary::before, .btn-success::before, .btn-danger::before, .btn-warning::before, .btn-secondary::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    z-index: -1;
+    animation: spin 3s linear infinite;
+    pointer-events: none;
   }
-  .btn-primary:hover { 
-    background: linear-gradient(90deg, #475569 0%, #334155 100%); 
-    transform: translateY(-2px); 
+
+  /* Card Colors: White/Black Cycle */
+  .form-container::before, .container-card::before {
+    background: conic-gradient(from var(--angle), rgba(255,255,255,0.8), rgba(0,0,0,0.8), rgba(255,255,255,0.8));
   }
-  .btn-secondary { 
-    background: linear-gradient(90deg, #475569 0%, #334155 100%); 
-    transition: background 0.2s ease, transform 0.2s ease; 
-    color: #f1f5f9; 
-    border: none; 
+
+  /* Button Colors */
+  .btn-primary::before { background: conic-gradient(from var(--angle), #3b82f6, transparent, #3b82f6); }
+  .btn-success::before { background: conic-gradient(from var(--angle), #22c55e, transparent, #22c55e); }
+  .btn-danger::before { background: conic-gradient(from var(--angle), #ef4444, transparent, #ef4444); }
+  .btn-warning::before { background: conic-gradient(from var(--angle), #f59e0b, transparent, #f59e0b); }
+  .btn-secondary::before { background: conic-gradient(from var(--angle), #9ca3af, transparent, #9ca3af); }
+
+  .btn-primary, .btn-success, .btn-danger, .btn-warning, .btn-secondary {
+    display: inline-block;
+    text-align: center;
+    font-weight: 500;
+    color: white;
+    transition: transform 0.2s;
   }
-  .btn-secondary:hover { 
-    background: linear-gradient(90deg, #64748b 0%, #475569 100%); 
-    transform: translateY(-2px); 
+  .btn-primary:hover, .btn-success:hover, .btn-danger:hover, .btn-warning:hover, .btn-secondary:hover {
+    transform: translateY(-2px);
   }
-  .btn-danger { 
-    background: linear-gradient(90deg, #dc2626 0%, #991b1b 100%); 
-    transition: background 0.2s ease, transform 0.2s ease; 
-    color: #f1f5f9; 
-    border: none; 
-  }
-  .btn-danger:hover { 
-    background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); 
-    transform: translateY(-2px); 
-  }
+
+  /* Form Elements - More Defined Borders */
   .form-control, .form-select { 
-    background-color: #1e293b; 
-    border: 1px solid #334155; 
+    background-color: rgba(0, 0, 0, 0.3); 
+    border: 1px solid rgba(255, 255, 255, 0.25); 
     color: #e2e8f0; 
     padding: 0.75rem; 
     border-radius: 0.5rem; 
+    backdrop-filter: blur(4px);
     transition: border-color 0.2s ease, box-shadow 0.2s ease; 
-    width: 100%; /* Ensure full width */
+    width: 100%;
     box-sizing: border-box;
   }
   .form-control:focus, .form-select:focus { 
-    background-color: #1e293b; 
-    border-color: #6366f1; 
+    background-color: rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 255, 255, 0.6); 
     outline: none; 
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); 
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1); 
   }
-  .form-label { 
-    color: #94a3b8; 
-  }
+  .form-label { color: #94a3b8; }
   .preset-item { 
-    background-color: #1e293b; 
-    border: 1px solid #334155; 
+    background-color: rgba(0, 0, 0, 0.2); 
+    border: 1px solid rgba(255, 255, 255, 0.25); 
     width: 100%; 
     box-sizing: border-box;
+    color: #f1f5f9;
   }
-  .content-wrapper { 
-    position: relative; 
-    z-index: 2; 
-    width: 100%; /* Ensure wrapper fits viewport */
-  }
-  .floating-icons { 
-    position: absolute; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%; 
-    overflow: hidden; 
-    z-index: 1; 
-  }
-  .floating-icon { 
-    position: absolute; 
-    opacity: 0.05; 
-    font-size: 3rem; 
-    animation: float 6s ease-in-out infinite; 
-    color: #6366f1; 
-  }
-  .floating-icon:nth-child(1) { top: 40%; left: 80%; animation-delay: 0s; }
-  .floating-icon:nth-child(2) { top: 60%; left: 67%; animation-delay: 1s; }
-  .floating-icon:nth-child(3) { top: 40%; left: 54%; animation-delay: 2s; }
-  .floating-icon:nth-child(4) { top: 60%; left: 41%; animation-delay: 3s; }
-  .floating-icon:nth-child(5) { top: 40%; left: 28%; animation-delay: 4s; }
-  .floating-icon:nth-child(6) { top: 80%; left: 54%; animation-delay: 5s; }
+  
+  /* Tabs */
   .main-tab, .preset-tab { 
-    border: 1px solid transparent; 
-    border-bottom: none; 
+    border-bottom: 2px solid transparent; 
     padding: 0.5rem 0.75rem; 
     cursor: pointer; 
     font-weight: 500; 
     color: #94a3b8; 
-    transition: color 0.2s, border-color 0.2s; 
+    transition: all 0.2s; 
     font-size: 0.875rem; 
-    flex: 1; /* Make tabs share space equally */
+    flex: 1; 
     text-align: center;
-    min-width: 0; /* Prevent tabs from forcing overflow */
+    min-width: 0; 
   }
-  .main-tab:hover, .preset-tab:hover { 
-    color: #e2e8f0; 
-  }
+  .main-tab:hover, .preset-tab:hover { color: #e2e8f0; }
   .main-tab.active, .preset-tab.active { 
     color: #f1f5f9; 
-    border-color: #334155; 
-    background-color: #1e293b; 
-    border-top-left-radius: 0.375rem; 
-    border-top-right-radius: 0.375rem; 
+    border-bottom-color: #3b82f6; 
   }
-  .main-tab-content.hidden, .preset-tab-content.hidden { 
-    display: none; 
-  }
-  @keyframes float { 
-    0%, 100% { transform: translateY(0px); } 
-    50% { transform: translateY(-20px); } 
-  }
+  .main-tab-content.hidden, .preset-tab-content.hidden { display: none; }
+
   /* Responsive Adjustments */
   @media (max-width: 640px) {
-    main { 
-      padding: 1rem; 
-      width: 100%; /* Ensure main fits viewport */
-      box-sizing: border-box;
-    }
-    .max-w-4xl { 
-      max-width: 100%; 
-      width: 100%; /* Ensure container fits viewport */
-      margin: 0; /* Remove horizontal margins */
-    }
-    .max-w-lg { 
-      max-width: 100%; 
-      width: 100%; 
-    }
-    .main-tab, .preset-tab { 
-      padding: 0.4rem 0.5rem; 
-      font-size: 0.75rem; 
-      flex: 1 1 auto; /* Allow tabs to shrink */
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis; /* Truncate long tab names */
-    }
-    .form-container, .container-card { 
-      padding: 1rem; 
-    }
-    .form-control, .form-select { 
-      font-size: 0.75rem; 
-      padding: 0.5rem; 
-    }
-    .form-label { 
-      font-size: 0.7rem; 
-    }
-    .btn-primary, .btn-secondary, .btn-danger { 
-      padding: 0.5rem 0.75rem; 
-      font-size: 0.7rem; 
-      width: 100%; /* Full-width buttons */
-      text-align: center;
-    }
+    main { padding: 1rem; width: 100%; box-sizing: border-box; }
+    .max-w-4xl { max-width: 100%; width: 100%; margin: 0; }
+    .max-w-lg { max-width: 100%; width: 100%; }
+    .main-tab, .preset-tab { padding: 0.4rem 0.5rem; font-size: 0.75rem; flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .form-container, .container-card { padding: 1rem; }
+    .form-control, .form-select { font-size: 0.75rem; padding: 0.5rem; }
+    .form-label { font-size: 0.7rem; }
+    .btn-primary, .btn-secondary, .btn-danger { padding: 0.5rem 0.75rem; font-size: 0.7rem; width: 100%; text-align: center; }
     h1 { font-size: 1.25rem; }
     h2 { font-size: 1rem; }
-    .preset-item { 
-      padding: 0.75rem; 
-      font-size: 0.75rem; 
-    }
+    .preset-item { padding: 0.75rem; font-size: 0.75rem; }
     .preset-item h3 { font-size: 0.875rem; }
     .preset-item p { font-size: 0.7rem; }
-    .floating-icon { font-size: 1.5rem; } /* Smaller floating icons */
-    nav[aria-label="Tabs"], nav[aria-label="Preset Tabs"] {
-      display: flex;
-      flex-wrap: nowrap; /* Prevent wrapping to avoid overflow */
-      overflow-x: auto; /* Allow scrolling if tabs exceed width */
-      width: 100%;
-      box-sizing: border-box;
-      gap: 0.5rem; /* Smaller gap for mobile */
-    }
-    .grid.md\\:grid-cols-2 { 
-      grid-template-columns: 1fr; /* Single column on mobile */
-      gap: 1rem;
-    }
-    .flex.sm\\:flex-row { 
-      flex-direction: column; /* Stack buttons vertically */
-      gap: 0.5rem;
-    }
-    .space-y-4 > :not([hidden]) ~ :not([hidden]) { 
-      margin-top: 0.75rem; /* Adjust spacing for form fields */
-    }
-    #system-status { 
-      font-size: 0.7rem; 
-      padding: 0.75rem; 
-    }
-    #client-preset-list, #server-preset-list { 
-      max-height: 400px; /* Smaller height for mobile */
-    }
+    nav[aria-label="Tabs"], nav[aria-label="Preset Tabs"] { display: flex; flex-wrap: nowrap; overflow-x: auto; width: 100%; box-sizing: border-box; gap: 0.5rem; }
+    .grid.md\\:grid-cols-2 { grid-template-columns: 1fr; gap: 1rem; }
+    .flex.sm\\:flex-row { flex-direction: column; gap: 0.5rem; }
+    .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem; }
+    #system-status { font-size: 0.7rem; padding: 0.75rem; }
+    #client-preset-list, #server-preset-list { max-height: 400px; }
   }
 </style>
 </head>
 <body class="text-gray-100 min-h-screen">
-  <div class="floating-icons" id="floating-icons-container"></div>
+  <div id="bg"></div>
 
   <div class="content-wrapper">
     <div class="flex">
@@ -256,8 +209,8 @@
                 <div><label class="form-label block text-sm font-medium">Enable TCP Mux</label><select name="use_mux" class="form-select w-full"><option value="false" selected>No</option><option value="true">Yes</option></select></div>
                 <div><label class="form-label block text-sm font-medium">Local Ports (e.g., 22,6000-6006,6007)</label><input type="text" name="port_input" required class="form-control w-full"></div>
                 <div class="flex flex-col sm:flex-row gap-3 pt-4">
-                  <button type="submit" class="btn-primary w-full px-4 py-3 rounded-lg text-white font-medium">Setup Client</button>
-                  <a href="/" class="btn-secondary w-full px-4 py-3 rounded-lg text-gray-200 text-center">Back</a>
+                  <button type="submit" class="btn-primary w-full px-4 py-3 text-white font-medium">Setup Client</button>
+                  <a href="/" class="btn-secondary w-full px-4 py-3 text-gray-200 text-center">Back</a>
                 </div>
               </form>
             </div>
@@ -281,8 +234,8 @@
                 <div><label class="form-label block text-sm font-medium">Enable TCP Mux</label><select name="use_mux" class="form-select w-full"><option value="false" selected>No</option><option value="true">Yes</option></select></div>
                 <div><label class="form-label block text-sm font-medium">Auth Token</label><input type="text" name="token" value="t.me/Orion_Group_support" class="form-control w-full"></div>
                 <div class="flex flex-col sm:flex-row gap-3 pt-4">
-                  <button type="submit" class="btn-primary w-full px-4 py-3 rounded-lg text-white font-medium">Setup Server</button>
-                  <a href="/" class="btn-secondary w-full px-4 py-3 rounded-lg text-gray-200 text-center">Back</a>
+                  <button type="submit" class="btn-primary w-full px-4 py-3 text-white font-medium">Setup Server</button>
+                  <a href="/" class="btn-secondary w-full px-4 py-3 text-gray-200 text-center">Back</a>
                 </div>
               </form>
             </div>
@@ -311,7 +264,7 @@
                     <div><label class="form-label block text-sm font-medium">Auth Token</label><input type="text" name="auth_token" value="t.me/Orion_Group_support" class="form-control w-full"></div>
                     <div><label class="form-label block text-sm font-medium">Transport</label><select name="transport" class="form-select w-full"><option value="tcp" selected>TCP</option><option value="websocket">Websocket</option><option value="quic">QUIC</option><option value="kcp">KCP</option></select></div>
                     <div><label class="form-label block text-sm font-medium">Enable TCP Mux</label><select name="use_mux" class="form-select w-full"><option value="false" selected>No</option><option value="true">Yes</option></select></div>
-                    <button type="submit" class="btn-primary w-full px-4 py-3 rounded-lg text-white font-medium">Save Client Preset</button>
+                    <button type="submit" class="btn-primary w-full px-4 py-3 text-white font-medium">Save Client Preset</button>
                   </form>
                 </div>
                 <div class="container-card">
@@ -330,7 +283,7 @@
                     <div><label class="form-label block text-sm font-medium">Protocol</label><select name="proto_choice" class="form-select w-full"><option value="1">None</option><option value="2" selected>QUIC</option><option value="3">KCP</option></select></div>
                     <div><label class="form-label block text-sm font-medium">Enable TCP Mux</label><select name="use_mux" class="form-select w-full"><option value="false" selected>No</option><option value="true">Yes</option></select></div>
                     <div><label class="form-label block text-sm font-medium">Auth Token</label><input type="text" name="token" value="t.me/Orion_Group_support" class="form-control w-full"></div>
-                    <button type="submit" class="btn-primary w-full px-4 py-3 rounded-lg text-white font-medium">Save Server Preset</button>
+                    <button type="submit" class="btn-primary w-full px-4 py-3 text-white font-medium">Save Server Preset</button>
                   </form>
                 </div>
                 <div class="container-card">
@@ -348,7 +301,7 @@
               <div class="container-card">
                 <h2 class="text-xl font-semibold mb-4">Install/Update FRP</h2>
                 <p class="text-gray-400 mb-4 text-sm">This will download the latest version of FRP from GitHub, install the binaries, and set up the systemd services. This can be used for a fresh install or to update an existing one.</p>
-                <button id="install-btn" class="btn-primary w-full px-4 py-3 rounded-lg text-white font-medium">Install/Update FRP</button>
+                <button id="install-btn" class="btn-primary w-full px-4 py-3 text-white font-medium">Install/Update FRP</button>
               </div>
               <!-- Uninstall Card -->
               <div class="container-card">
@@ -356,7 +309,7 @@
                 <p class="text-gray-400 mb-4 text-sm">
                   <span class="font-bold text-yellow-400">Warning:</span> This action is irreversible. It will stop all FRP services, remove the binaries, delete all server and client configurations, and remove the systemd service files.
                 </p>
-                <button id="uninstall-btn" class="btn-danger w-full px-4 py-3 rounded-lg text-white font-medium">Uninstall FRP</button>
+                <button id="uninstall-btn" class="btn-danger w-full px-4 py-3 text-white font-medium">Uninstall FRP</button>
               </div>
             </div>
             <!-- Status/Feedback Area -->
@@ -573,20 +526,24 @@
     });
   });
 </script>
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const container = document.getElementById('floating-icons-container');
-    if (container) {
-      const techEmojis = ['💻', '🖥️', '💾', '💿', '🔌', '📡', '🛰️', '🚀', '⚙️', '🔧', '🔬', '💡', '📈', '📊', '🔗', '🌐', '☁️', '⚡️', '🤖', '👾', '📱', '⌨️', '🖱️', '🔋', '🧠'];
-      const iconCount = 6;
-      let iconsHtml = '';
-      for (let i = 0; i < iconCount; i++) {
-        const randomEmoji = techEmojis[Math.floor(Math.random() * techEmojis.length)];
-        iconsHtml += `<div class="floating-icon">${randomEmoji}</div>`;
-      }
-      container.innerHTML = iconsHtml;
-    }
-  });
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.globe.min.js"></script>
+    <script>
+        VANTA.GLOBE({
+  el: "#bg",
+  mouseControls: false,
+  touchControls: false,
+  gyroControls: false,
+  minHeight: 200.00,
+  minWidth: 200.00,
+  scale: 1.00,
+  scaleMobile: 1.00,
+  color: 0x697ca0,
+  color2: 0xf21d1d,
+  size: 1.20,
+  backgroundColor: 0x0
+})
 </script>
 </body>
 </html>
