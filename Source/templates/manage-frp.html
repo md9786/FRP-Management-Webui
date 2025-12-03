@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -437,6 +438,19 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+        // Auto-select tab logic based on available configs
+        const hasClients = !!document.getElementById('inner-client-select');
+        const hasServers = !!document.getElementById('inner-server-select');
+
+        // If no clients but we have servers, switch to servers
+        if (!hasClients && hasServers) {
+            switchMainTab('servers');
+        } 
+        // If we have clients but no servers, switch to clients (default, but ensuring)
+        else if (hasClients && !hasServers) {
+            switchMainTab('clients');
+        }
+
         // Init active tabs logs
         {{ if .Clients }}
            {{ range $index, $client := .Clients }}
