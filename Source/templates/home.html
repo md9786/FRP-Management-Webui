@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -121,14 +123,15 @@
   .metric-high { color: #ef4444; }
   .metric-medium { color: #f59e0b; }
   .metric-low { color: #22c55e; }
-  .tab-content { max-height: 300px; overflow-y: auto; }
-  .network-chart-container { max-width: 600px; height: 300px; }
+  .tab-content { max-height: 500px; overflow-y: auto; }
+  .network-chart-container { width: 100%; height: 350px; }
   .status-dot { width: 10px; height: 10px; border-radius: 50%; }
   .status-dot-green { background-color: #22c55e; }
   .status-dot-orange { background-color: #f59e0b; }
   .status-dot-red { background-color: #ef4444; }
   .status-dot-gray { background-color: #6b7280; }
-  .status-item { position: relative; }
+  .status-item { position: relative; transition: background-color 0.2s; }
+  .status-item:hover { background-color: rgba(255,255,255,0.05); border-radius: 0.375rem; }
   .status-tooltip { 
     visibility: hidden; 
     position: absolute; 
@@ -169,33 +172,30 @@
           </section>
           
           <!-- FRP Status, Overview & Network History -->
-          <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column -->
-            <div class="lg:col-span-1 space-y-8">
-              <!-- Connection Overview -->
-              <div class="card p-6 shadow-lg" id="connection-overview-container">
-                <h2 class="text-xl font-semibold text-gray-100 mb-4">Connection Overview</h2>
-                <div class="flex border-b border-gray-600">
-                  <button class="tab flex-1 py-2 px-4 text-sm font-medium active" data-tab="servers">Servers</button>
-                  <button class="tab flex-1 py-2 px-4 text-sm font-medium" data-tab="clients">Clients</button>
+          <section class="space-y-8">
+            <!-- Connection Overview -->
+            <div class="card p-6 shadow-lg" id="connection-overview-container">
+              <h2 class="text-xl font-semibold text-gray-100 mb-4">Connection Overview</h2>
+              <div class="flex border-b border-gray-600">
+                <button class="tab flex-1 py-2 px-4 text-sm font-medium active" data-tab="servers">Servers</button>
+                <button class="tab flex-1 py-2 px-4 text-sm font-medium" data-tab="clients">Clients</button>
+              </div>
+              <div class="tab-content mt-4">
+                <div id="servers-tab" class="tab-pane">
+                  <ul id="server-status-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <li class="text-gray-500 text-sm">Loading...</li>
+                  </ul>
                 </div>
-                <div class="tab-content mt-4">
-                  <div id="servers-tab" class="tab-pane">
-                    <ul id="server-status-list" class="grid grid-cols-3 gap-4">
-                      <li class="text-gray-500 text-sm">Loading...</li>
-                    </ul>
-                  </div>
-                  <div id="clients-tab" class="tab-pane hidden">
-                    <ul id="client-status-list" class="grid grid-cols-3 gap-4">
-                      <li class="text-gray-500 text-sm">Loading...</li>
-                    </ul>
-                  </div>
+                <div id="clients-tab" class="tab-pane hidden">
+                  <ul id="client-status-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <li class="text-gray-500 text-sm">Loading...</li>
+                  </ul>
                 </div>
               </div>
             </div>
 
-            <!-- Right Column (Network History) -->
-            <div class="lg:col-span-2 card network-chart-container p-6 shadow-lg">
+            <!-- Network History -->
+            <div class="card network-chart-container p-6 shadow-lg">
               <h2 class="text-xl font-semibold text-gray-100 mb-4">Network History (Last 5 Mins)</h2>
               <canvas id="network-chart"></canvas>
             </div>
@@ -286,16 +286,22 @@
         if (data.servers && data.servers.length > 0) {
             data.servers.forEach(server => {
                 const statusInfo = statusMap[server.status] || statusMap['stopped'];
-                const li = document.createElement('li');
-                li.className = 'status-item text-sm';
-                li.innerHTML = `
-                    <div class="flex items-center">
-                        <span class="status-dot status-dot-${statusInfo.color} mb-1"></span>
-                        <span class="text-gray-300 truncate pl-2">${server.name}</span>
-                        <span class="status-tooltip capitalize">${statusInfo.text}</span>
+                const link = document.createElement('a');
+                link.href = `/manage-frp#servers:${server.name}`;
+                link.className = "block w-full";
+                link.innerHTML = `
+                    <div class="status-item text-sm p-1 rounded">
+                        <div class="flex items-center">
+                            <span class="status-dot status-dot-${statusInfo.color} mb-1"></span>
+                            <span class="text-gray-300 truncate pl-2">${server.name}</span>
+                            <span class="status-tooltip capitalize">${statusInfo.text}</span>
+                        </div>
                     </div>
                 `;
+                const li = document.createElement('li');
+                li.appendChild(link);
                 serverListEl.appendChild(li);
+
                 if (server.status === 'running' || server.status === 'warning') {
                     hasActiveServers = true;
                 }
@@ -307,16 +313,22 @@
         if (data.clients && data.clients.length > 0) {
             data.clients.forEach(client => {
                 const statusInfo = statusMap[client.status] || statusMap['stopped'];
-                const li = document.createElement('li');
-                li.className = 'status-item text-sm';
-                li.innerHTML = `
-                    <div class="flex items-center">
-                        <span class="status-dot status-dot-${statusInfo.color} mb-1"></span>
-                        <span class="text-gray-300 truncate pl-2">${client.name}</span>
-                        <span class="status-tooltip capitalize">${statusInfo.text}</span>
+                const link = document.createElement('a');
+                link.href = `/manage-frp#clients:${client.name}`;
+                link.className = "block w-full";
+                link.innerHTML = `
+                    <div class="status-item text-sm p-1 rounded">
+                        <div class="flex items-center">
+                            <span class="status-dot status-dot-${statusInfo.color} mb-1"></span>
+                            <span class="text-gray-300 truncate pl-2">${client.name}</span>
+                            <span class="status-tooltip capitalize">${statusInfo.text}</span>
+                        </div>
                     </div>
                 `;
+                const li = document.createElement('li');
+                li.appendChild(link);
                 clientListEl.appendChild(li);
+
                 if (client.status === 'running' || client.status === 'warning') {
                     hasActiveClients = true;
                 }
@@ -325,23 +337,27 @@
             clientListEl.innerHTML = '<li class="text-gray-500 text-sm col-span-3">No clients configured.</li>';
         }
 
-        // Set active tab based on active configurations
-        const tabButtons = document.querySelectorAll('.tab');
-        const tabPanes = document.querySelectorAll('.tab-pane');
-        tabButtons.forEach(btn => btn.classList.remove('active'));
-        tabPanes.forEach(pane => pane.classList.add('hidden'));
+        // Only auto-switch tabs on initial load or if user hasn't interacted? 
+        // For now we stick to original logic: prioritise servers if active, else clients.
+        // But we add a check to not disrupt if user is clicking.
+        if (!window.tabUserSelected) {
+             const tabButtons = document.querySelectorAll('.tab');
+             const tabPanes = document.querySelectorAll('.tab-pane');
+             tabButtons.forEach(btn => btn.classList.remove('active'));
+             tabPanes.forEach(pane => pane.classList.add('hidden'));
 
-        if (hasActiveServers) {
-            document.querySelector('.tab[data-tab="servers"]').classList.add('active');
-            document.getElementById('servers-tab').classList.remove('hidden');
-        } else if (hasActiveClients) {
-            document.querySelector('.tab[data-tab="clients"]').classList.add('active');
-            document.getElementById('clients-tab').classList.remove('hidden');
-        } else {
-            // Default to servers if no active configurations
-            document.querySelector('.tab[data-tab="servers"]').classList.add('active');
-            document.getElementById('servers-tab').classList.remove('hidden');
+             if (hasActiveServers) {
+                 document.querySelector('.tab[data-tab="servers"]').classList.add('active');
+                 document.getElementById('servers-tab').classList.remove('hidden');
+             } else if (hasActiveClients) {
+                 document.querySelector('.tab[data-tab="clients"]').classList.add('active');
+                 document.getElementById('clients-tab').classList.remove('hidden');
+             } else {
+                 document.querySelector('.tab[data-tab="servers"]').classList.add('active');
+                 document.getElementById('servers-tab').classList.remove('hidden');
+             }
         }
+
     } catch (error) {
         console.error('Error fetching connection overview:', error);
         serverListEl.innerHTML = '<li class="text-red-400 text-sm col-span-3">Error loading status.</li>';
@@ -449,11 +465,13 @@
     setInterval(updateConnectionOverview, 5000);
 
     // Tab switching logic
+    window.tabUserSelected = false;
     const tabButtons = document.querySelectorAll('.tab');
     const tabPanes = document.querySelectorAll('.tab-pane');
 
     tabButtons.forEach(button => {
       button.addEventListener('click', () => {
+        window.tabUserSelected = true;
         tabButtons.forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
 

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -135,6 +136,15 @@
             </div>
             <h6 class="text-sm font-medium text-gray-400 mt-3">Live Logs</h6>
             <div class="flex items-center space-x-2 my-2">
+              <div class="w-32 flex-shrink-0">
+                  <select id="log-mode-efrp" onchange="handleLogModeChange('efrp', 'efrp', this.value)" class="form-control px-2 py-1 text-sm bg-gray-800 border-gray-600">
+                      <option value="live">Live Stream</option>
+                      <option value="10 min ago">Last 10 Min</option>
+                      <option value="1 hour ago">Last 1 Hour</option>
+                      <option value="24 hours ago">Last 24 Hours</option>
+                      <option value="boot">Since Boot</option>
+                  </select>
+              </div>
               <input type="text" placeholder="Search logs..." oninput="applyFilters('efrp')" id="search-efrp" class="form-control w-full px-2 py-1 text-sm">
               <div class="flex-shrink-0 space-x-1 log-filter-buttons">
                 <button onclick="applyFilters('efrp', 'all', this)" class="log-filter-btn active px-2 py-1 text-xs rounded-md">All</button>
@@ -152,6 +162,7 @@
 <script>
     let logBuffers = {};
     let currentFilters = {};
+    let wsConnections = {};
     const MAX_LOG_LINES = 200;
 
     // Toast Notification System
@@ -225,9 +236,9 @@
         const wsUrl = `${protocol}//${window.location.host}/ws/logs/efrp/${serviceName}`;
         const ws = new WebSocket(wsUrl);
         const logsElement = document.getElementById(`logs-${serviceName}`);
+        wsConnections[serviceName] = ws;
 
         ws.onopen = () => {
-            console.log(`WebSocket connected for ${serviceName}`);
             logBuffers[serviceName] = [];
             logsElement.innerText = 'Log stream connected. Waiting for data...';
         };
@@ -245,16 +256,59 @@
         };
 
         ws.onclose = () => {
-            console.log(`WebSocket disconnected for ${serviceName}. Reconnecting in 5s.`);
-            logsElement.innerText += '\n\n[Stream disconnected. Reconnecting...]';
-            setTimeout(() => connectToLogStream(serviceName), 5000);
+            if(wsConnections[serviceName]) {
+                logsElement.innerText += '\n\n[Stream disconnected. Reconnecting...]';
+                wsConnections[serviceName] = null;
+                setTimeout(() => connectToLogStream(serviceName), 5000);
+            }
         };
 
         ws.onerror = (error) => {
             console.error(`WebSocket error for ${serviceName}:`, error);
             logsElement.innerText += '\n\n[An error occurred with the log stream.]';
-            ws.close();
+            if(ws) ws.close();
         };
+    }
+
+    async function loadHistory(prefix, name, since) {
+        // efrp page uses 'efrp' as serviceName variable but prefix/name for api logic
+        // The API route is /api/logs/:type/:name. For EFRP type=efrp, name=ignored/efrp
+        const serviceName = 'efrp';
+        
+        if (wsConnections[serviceName]) {
+            wsConnections[serviceName].close();
+            wsConnections[serviceName] = null;
+        }
+
+        const logsElement = document.getElementById(`logs-${serviceName}`);
+        logsElement.innerText = `Fetching logs since: ${since}...`;
+
+        let querySince = since;
+        if (since === 'boot') querySince = '1970-01-01';
+
+        try {
+            const res = await fetch(`/api/logs/efrp/efrp?since=${encodeURIComponent(querySince)}`);
+            if (!res.ok) throw new Error(res.statusText);
+            const text = await res.text();
+            
+            // Clean lines and populate buffer
+            const lines = text.split('\n').filter(l => l.trim().length > 0).map(cleanLogLine);
+            logBuffers[serviceName] = lines;
+            applyFilters(serviceName);
+
+        } catch (e) {
+            logsElement.innerText = "Error fetching history: " + e.message;
+        }
+    }
+
+    function handleLogModeChange(prefix, name, mode) {
+        // For EFRP page specific logic
+        const serviceName = 'efrp';
+        if (mode === 'live') {
+            connectToLogStream(serviceName);
+        } else {
+            loadHistory(prefix, name, mode);
+        }
     }
 
     window.addEventListener('DOMContentLoaded', () => {

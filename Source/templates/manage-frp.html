@@ -227,8 +227,17 @@
                     <button onclick="performAction('/client/restart/{{ $client }}')" class="btn-warning px-4 py-2 text-white font-medium">Restart</button>
                     <a href="/client/edit/{{ $client }}" class="btn-primary px-4 py-2 text-white font-medium">Edit Config</a>
                   </div>
-                  <h6 class="text-sm font-medium text-gray-400 mt-3">Live Logs</h6>
+                  <h6 class="text-sm font-medium text-gray-400 mt-3">Logs</h6>
                   <div class="flex flex-col md:flex-row md:items-center gap-3 my-3">
+                    <div class="w-full md:w-32">
+                        <select id="log-mode-client-{{ $client }}" onchange="handleLogModeChange('client', '{{ $client }}', this.value)" class="form-control px-2 py-1 text-sm bg-gray-800 border-gray-600">
+                            <option value="live">Live Stream</option>
+                            <option value="10 min ago">Last 10 Min</option>
+                            <option value="1 hour ago">Last 1 Hour</option>
+                            <option value="24 hours ago">Last 24 Hours</option>
+                            <option value="boot">Since Boot</option>
+                        </select>
+                    </div>
                     <input type="text" placeholder="Search logs..." oninput="applyFilters('client', '{{ $client }}')" id="search-client-{{ $client }}" class="form-control w-full md:flex-1 px-2 py-1 text-sm">
                     <div class="flex-shrink-0 space-x-1">
                       <button onclick="applyFilters('client', '{{ $client }}', 'all', this)" class="log-filter-btn active px-2 py-1 text-xs rounded-md">All</button>
@@ -237,7 +246,7 @@
                       <button onclick="applyFilters('client', '{{ $client }}', '[E]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">ERROR</button>
                     </div>
                   </div>
-                  <pre id="logs-client-{{ $client }}" class="log-pre p-4 mt-2 text-sm" style="max-height: 300px; overflow-y: auto;">Connecting to log stream...</pre>
+                  <pre id="logs-client-{{ $client }}" class="log-pre p-4 mt-2 text-sm" style="max-height: 300px; overflow-y: auto;">Waiting for log selection...</pre>
                 </div>
               </div>
               {{ end }}
@@ -277,8 +286,17 @@
                     <button onclick="performAction('/server/restart/{{ $server }}')" class="btn-warning px-4 py-2 text-white font-medium">Restart</button>
                     <a href="/server/edit/{{ $server }}" class="btn-primary px-4 py-2 text-white font-medium">Edit Config</a>
                   </div>
-                  <h6 class="text-sm font-medium text-gray-400 mt-3">Live Logs</h6>
+                  <h6 class="text-sm font-medium text-gray-400 mt-3">Logs</h6>
                   <div class="flex flex-col md:flex-row md:items-center gap-3 my-3">
+                    <div class="w-full md:w-32">
+                        <select id="log-mode-server-{{ $server }}" onchange="handleLogModeChange('server', '{{ $server }}', this.value)" class="form-control px-2 py-1 text-sm bg-gray-800 border-gray-600">
+                            <option value="live">Live Stream</option>
+                            <option value="10 min ago">Last 10 Min</option>
+                            <option value="1 hour ago">Last 1 Hour</option>
+                            <option value="24 hours ago">Last 24 Hours</option>
+                            <option value="boot">Since Boot</option>
+                        </select>
+                    </div>
                     <input type="text" placeholder="Search logs..." oninput="applyFilters('server', '{{ $server }}')" id="search-server-{{ $server }}" class="form-control w-full md:flex-1 px-2 py-1 text-sm">
                     <div class="flex-shrink-0 space-x-1">
                       <button onclick="applyFilters('server', '{{ $server }}', 'all', this)" class="log-filter-btn active px-2 py-1 text-xs rounded-md">All</button>
@@ -287,7 +305,7 @@
                       <button onclick="applyFilters('server', '{{ $server }}', '[E]', this)" class="log-filter-btn px-2 py-1 text-xs rounded-md">ERROR</button>
                     </div>
                   </div>
-                  <pre id="logs-server-{{ $server }}" class="log-pre p-4 mt-2 text-sm" style="max-height: 300px; overflow-y: auto;">Connecting to log stream...</pre>
+                  <pre id="logs-server-{{ $server }}" class="log-pre p-4 mt-2 text-sm" style="max-height: 300px; overflow-y: auto;">Waiting for log selection...</pre>
                 </div>
               </div>
               {{ end }}
@@ -304,6 +322,7 @@
 <script>
     let logBuffers = {};
     let currentFilters = {};
+    let wsConnections = {};
     const MAX_LOG_LINES = 200;
 
     // Toast Notification System
@@ -345,7 +364,6 @@
       document.getElementById('main-tab-select').value = tabName;
     }
 
-
     function switchInnerTab(prefix, tabName) {
       document.querySelectorAll(`.${prefix}-tab-content`).forEach(content => content.classList.add('hidden'));
       document.querySelectorAll(`.${prefix}-tab`).forEach(tab => tab.classList.remove('active'));
@@ -353,12 +371,19 @@
       document.getElementById(`tab-${prefix}-${tabName}`).classList.add('active');
       let select = document.getElementById(`inner-${prefix}-select`);
       if(select) select.value = tabName;
-      // Connect logs if not connected
-      connectToLogStream(prefix, tabName);
+
+      // Update URL hash without jumping
+      history.replaceState(null, null, `#${prefix}s:${tabName}`);
+      
+      // Initialize log stream based on current selector value if not running
+      const modeSelect = document.getElementById(`log-mode-${prefix}-${tabName}`);
+      if(modeSelect) {
+         handleLogModeChange(prefix, tabName, modeSelect.value);
+      }
     }
 
     function cleanLogLine(line) {
-        if (line.includes('frp') && (line.includes(' [I] ') || line.includes(' [W] ') || line.includes(' [E] '))) {
+        if (line.includes('frpc[') && (line.includes(' [I] ') || line.includes(' [W] ') || line.includes(' [E] '))) {
             const systemdTimestampMatch = line.match(/^[A-Za-z]{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+/);
             const systemdTimestamp = systemdTimestampMatch ? systemdTimestampMatch[0] : '';
             const cleanedLine = line.replace(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+\s+\[(I|W|E)\]\s+\[[^\]]+\]\s*/, ' [$1] ');
@@ -392,8 +417,6 @@
         logsElement.scrollTop = logsElement.scrollHeight;
     }
 
-    let wsConnections = {};
-
     function connectToLogStream(prefix, name) {
         const key = `${prefix}-${name}`;
         if (wsConnections[key]) return; // Already connected
@@ -406,7 +429,6 @@
         wsConnections[key] = ws;
 
         ws.onopen = () => {
-            console.log(`WebSocket connected for ${key}`);
             logBuffers[key] = [];
             logsElement.innerText = 'Log stream connected. Waiting for data...';
         };
@@ -424,44 +446,99 @@
         };
 
         ws.onclose = () => {
-            console.log(`WebSocket disconnected for ${key}. Reconnecting in 5s.`);
-            logsElement.innerText += '\n\n[Stream disconnected. Reconnecting...]';
-            wsConnections[key] = null;
-            setTimeout(() => connectToLogStream(prefix, name), 5000);
+            // Only reconnect if we still think we are connected (didn't explicitly close)
+            if (wsConnections[key]) {
+                logsElement.innerText += '\n\n[Stream disconnected. Reconnecting...]';
+                wsConnections[key] = null;
+                setTimeout(() => connectToLogStream(prefix, name), 5000);
+            }
         };
 
         ws.onerror = (error) => {
             console.error(`WebSocket error for ${key}:`, error);
             logsElement.innerText += '\n\n[An error occurred with the log stream.]';
-            ws.close();
+            if(ws) ws.close();
         };
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-        // Auto-select tab logic based on available configs
-        const hasClients = !!document.getElementById('inner-client-select');
-        const hasServers = !!document.getElementById('inner-server-select');
-
-        // If no clients but we have servers, switch to servers
-        if (!hasClients && hasServers) {
-            switchMainTab('servers');
-        } 
-        // If we have clients but no servers, switch to clients (default, but ensuring)
-        else if (hasClients && !hasServers) {
-            switchMainTab('clients');
+    async function loadHistory(prefix, name, since) {
+        const key = `${prefix}-${name}`;
+        // Close WS if open
+        if (wsConnections[key]) {
+            wsConnections[key].close();
+            wsConnections[key] = null;
         }
 
-        // Init active tabs logs
-        {{ if .Clients }}
-           {{ range $index, $client := .Clients }}
-             {{ if eq $index 0 }} connectToLogStream('client', '{{ $client }}'); {{ end }}
-           {{ end }}
-        {{ end }}
-        {{ if .Servers }}
-           {{ range $index, $server := .Servers }}
-             {{ if eq $index 0 }} connectToLogStream('server', '{{ $server }}'); {{ end }}
-           {{ end }}
-        {{ end }}
+        const logsElement = document.getElementById(`logs-${key}`);
+        logsElement.innerText = `Fetching logs since: ${since}...`;
+
+        let querySince = since;
+        if (since === 'boot') querySince = '1970-01-01'; // Roughly means "all available" for journalctl if boot handling isn't strict API side
+
+        try {
+            const res = await fetch(`/api/logs/${prefix}/${name}?since=${encodeURIComponent(querySince)}`);
+            if (!res.ok) throw new Error(res.statusText);
+            const text = await res.text();
+            
+            // Clean lines and populate buffer
+            const lines = text.split('\n').filter(l => l.trim().length > 0).map(cleanLogLine);
+            logBuffers[key] = lines;
+            applyFilters(prefix, name);
+
+        } catch (e) {
+            logsElement.innerText = "Error fetching history: " + e.message;
+        }
+    }
+
+    function handleLogModeChange(prefix, name, mode) {
+        if (mode === 'live') {
+            connectToLogStream(prefix, name);
+        } else {
+            loadHistory(prefix, name, mode);
+        }
+    }
+
+    // Handle Deep Linking / Hash Navigation
+    function handleHashNavigation() {
+        const hash = window.location.hash.substring(1); // remove #
+        if (!hash) {
+            // Default check: existing logic for default tabs
+            if ({{ if .Clients }}true{{else}}false{{end}}) {
+                switchMainTab('clients');
+                // Trigger log for the first client
+                const firstClient = "{{ if .Clients }}{{ index .Clients 0 }}{{end}}";
+                if(firstClient) switchInnerTab('client', firstClient);
+            } else if ({{ if .Servers }}true{{else}}false{{end}}) {
+                switchMainTab('servers');
+                const firstServer = "{{ if .Servers }}{{ index .Servers 0 }}{{end}}";
+                if(firstServer) switchInnerTab('server', firstServer);
+            }
+            return;
+        }
+
+        // Format: clients:name or servers:name or just clients/servers
+        if (hash === 'clients' || hash === 'servers') {
+            switchMainTab(hash);
+            return;
+        }
+
+        const parts = hash.split(':');
+        if (parts.length === 2) {
+            const mainTab = parts[0]; // 'clients' or 'servers'
+            const subTab = parts[1];  // config name
+            
+            switchMainTab(mainTab);
+            
+            // prefix for inner tab is 'client' or 'server' (singular)
+            const innerPrefix = mainTab.slice(0, -1); 
+            switchInnerTab(innerPrefix, subTab);
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        handleHashNavigation();
+        // Listen for hash changes if user uses back/forward buttons
+        window.addEventListener('hashchange', handleHashNavigation);
     });
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>

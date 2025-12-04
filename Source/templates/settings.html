@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,8 +33,8 @@
 
   .content-wrapper { position: relative; z-index: 2; }
 
-  /* Common Liquid Glass Style & Animated Border Base */
-  .card, .btn-primary, .btn-success, .btn-danger, .btn-warning, .btn-secondary {
+  /* Common Liquid Glass Style */
+  .card, .btn-primary, .btn-success, .btn-danger, .btn-secondary {
     background: rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
@@ -44,9 +45,9 @@
     isolation: isolate;
   }
 
-  /* Pseudo-element for border */
+  /* Animated Border */
   .card::before, 
-  .btn-primary::before, .btn-success::before, .btn-danger::before, .btn-warning::before, .btn-secondary::before {
+  .btn-primary::before, .btn-success::before, .btn-danger::before, .btn-secondary::before {
     content: "";
     position: absolute;
     inset: 0;
@@ -59,39 +60,27 @@
     z-index: -1;
     animation: spin 3s linear infinite;
     pointer-events: none;
-  }
-
-  /* Card Colors: White/Black Cycle */
-  .card::before {
     background: conic-gradient(from var(--angle), rgba(255,255,255,0.8), rgba(0,0,0,0.8), rgba(255,255,255,0.8));
   }
-
+  
   /* Button Colors */
   .btn-primary::before { background: conic-gradient(from var(--angle), #3b82f6, transparent, #3b82f6); }
   .btn-success::before { background: conic-gradient(from var(--angle), #22c55e, transparent, #22c55e); }
   .btn-danger::before { background: conic-gradient(from var(--angle), #ef4444, transparent, #ef4444); }
-  .btn-warning::before { background: conic-gradient(from var(--angle), #f59e0b, transparent, #f59e0b); }
   .btn-secondary::before { background: conic-gradient(from var(--angle), #9ca3af, transparent, #9ca3af); }
 
-  .btn-primary, .btn-success, .btn-danger, .btn-warning, .btn-secondary {
+  .btn-primary, .btn-success, .btn-danger, .btn-secondary {
     display: inline-block;
     text-align: center;
     font-weight: 500;
     color: white;
     transition: transform 0.2s;
+    cursor: pointer;
   }
-  .btn-primary:hover, .btn-success:hover, .btn-danger:hover, .btn-warning:hover, .btn-secondary:hover {
+  .btn-primary:hover, .btn-success:hover, .btn-danger:hover, .btn-secondary:hover {
     transform: translateY(-2px);
   }
 
-  .error-alert {
-    background: rgba(220, 38, 38, 0.2);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(248, 113, 113, 0.3);
-    color: #fff;
-  }
-
-  /* Form Inputs - More Defined Borders */
   .form-control {
     background-color: rgba(0, 0, 0, 0.3); 
     border: 1px solid rgba(255, 255, 255, 0.25); 
@@ -99,6 +88,7 @@
     backdrop-filter: blur(4px);
     transition: border-color 0.2s ease;
     border-radius: 0.5rem;
+    padding: 0.75rem;
   }
   .form-control:focus {
     background-color: rgba(0, 0, 0, 0.5);
@@ -106,9 +96,15 @@
     outline: none;
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
   }
-  .form-label { color: #94a3b8; }
-</style>
+  .form-label { color: #94a3b8; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; display: block; }
 
+  .error-alert {
+    background: rgba(220, 38, 38, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    color: #fff;
+  }
+</style>
 </head>
 <body class="text-gray-100 min-h-screen">
   <div id="bg"></div>
@@ -117,55 +113,147 @@
     <div class="flex">
         {{template "sidebar.html" .}}
         <main class="flex-1 p-8">
-            <div class="max-w-xl mx-auto">
-                <h1 class="text-2xl font-semibold text-gray-100 mb-6">Settings</h1>
+            <div class="max-w-2xl mx-auto space-y-8">
+                <h1 class="text-2xl font-semibold text-gray-100">Settings</h1>
 
                 {{ if .Error }}
-                <div class="error-alert rounded-lg p-3 mb-6 text-sm text-white">
-                  <div class="flex items-center">
-                    <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                    </svg>
+                <div class="error-alert rounded-lg p-3 text-sm text-white">
                     {{ .Error }}
-                  </div>
                 </div>
                 {{ end }}
 
+                <!-- User Credentials -->
                 <form id="settings-form" method="post" action="/settings" class="card p-6 shadow-lg space-y-6">
+                    <h2 class="text-xl font-semibold mb-4">Account Security</h2>
                     <div>
-                        <label for="new_username" class="form-label block text-sm font-medium mb-2">Username</label>
-                        <input type="text" id="new_username" name="new_username" value="{{ .Username }}" required class="form-control w-full p-3 text-sm" />
+                        <label for="new_username" class="form-label">Username</label>
+                        <input type="text" id="new_username" name="new_username" value="{{ .Username }}" required class="form-control w-full" />
                     </div>
                     <div>
-                        <label for="current_password" class="form-label block text-sm font-medium mb-2">Current Password (Required to make changes)</label>
-                        <input type="password" id="current_password" name="current_password" required class="form-control w-full p-3 text-sm" placeholder="Enter your current password" />
+                        <label for="current_password" class="form-label">Current Password (Required)</label>
+                        <input type="password" id="current_password" name="current_password" required class="form-control w-full" placeholder="Enter your current password" />
                     </div>
                     <hr class="border-gray-600">
                     <div>
-                        <label for="new_password" class="form-label block text-sm font-medium mb-2">New Password</label>
-                        <input type="password" id="new_password" name="new_password" class="form-control w-full p-3 text-sm" placeholder="Leave blank to keep current password" />
+                        <label for="new_password" class="form-label">New Password</label>
+                        <input type="password" id="new_password" name="new_password" class="form-control w-full" placeholder="Leave blank to keep current" />
                     </div>
                     <div>
-                        <label for="confirm_password" class="form-label block text-sm font-medium mb-2">Confirm New Password</label>
-                        <input type="password" id="confirm_password" name="confirm_password" class="form-control w-full p-3 text-sm" placeholder="Confirm new password" />
+                        <label for="confirm_password" class="form-label">Confirm New Password</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-control w-full" placeholder="Confirm new password" />
                     </div>
                     <div class="flex space-x-4 pt-4">
-                        <button type="submit" class="btn-primary px-4 py-2 text-white font-medium">Save Changes</button>
-                        <a href="/" class="btn-secondary px-4 py-2 text-gray-200 text-center">Back</a>
+                        <button type="submit" class="btn-primary px-4 py-2 text-white font-medium">Save Account</button>
                     </div>
                 </form>
+
+                <!-- Panel SSL Settings -->
+                <div class="card p-6 shadow-lg space-y-6">
+                    <h2 class="text-xl font-semibold mb-4">Panel SSL Configuration</h2>
+                    <p class="text-sm text-gray-400">Configure paths to your certificate files to enable HTTPS for this panel. Leave empty to use HTTP.</p>
+                    <form id="ssl-form" class="space-y-4">
+                        <div>
+                            <label for="cert_path" class="form-label">Certificate Path (.pem/.crt)</label>
+                            <input type="text" id="cert_path" name="cert_path" value="{{ .CertPath }}" class="form-control w-full" placeholder="/path/to/cert.pem">
+                        </div>
+                        <div>
+                            <label for="key_path" class="form-label">Private Key Path (.key)</label>
+                            <input type="text" id="key_path" name="key_path" value="{{ .KeyPath }}" class="form-control w-full" placeholder="/path/to/key.pem">
+                        </div>
+                        <div class="flex space-x-4 pt-4">
+                            <button type="submit" class="btn-primary px-4 py-2 text-white font-medium">Save SSL Settings</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Backup & Restore -->
+                <div class="card p-6 shadow-lg space-y-6">
+                    <h2 class="text-xl font-semibold mb-4">Backup & Restore</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="font-medium text-gray-300 mb-2">Create Backup</h3>
+                            <p class="text-sm text-gray-400 mb-4">Download a zip archive of all configuration files.</p>
+                            <a href="/api/backup/download" class="btn-success w-full px-4 py-2 block text-white text-center">Download Backup</a>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-300 mb-2">Restore Backup</h3>
+                            <p class="text-sm text-gray-400 mb-4">Upload a backup zip file. This will restart services.</p>
+                            <form id="restore-form" class="flex gap-2">
+                                <input type="file" name="backup_file" accept=".zip" class="hidden" id="file-upload">
+                                <label for="file-upload" class="btn-secondary flex-1 px-4 py-2 text-white text-center cursor-pointer truncate">Choose File</label>
+                                <button type="submit" class="btn-danger flex-1 px-4 py-2 text-white text-center">Restore</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </main>
     </div>
   </div>
   <script>
+    // Toast Helper
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white z-50 transform transition-all duration-300 translate-y-[-100%] opacity-0 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
+        toast.style.backdropFilter = 'blur(10px)';
+        toast.innerText = message;
+        document.body.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.remove('translate-y-[-100%]', 'opacity-0'));
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-y-[-20px]');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
     document.getElementById('settings-form').addEventListener('submit', function(e) {
         const newPassword = document.getElementById('new_password').value;
         const confirmPassword = document.getElementById('confirm_password').value;
-
         if (newPassword !== confirmPassword) {
             alert('New passwords do not match.');
             e.preventDefault();
+        }
+    });
+
+    // SSL Form AJAX
+    document.getElementById('ssl-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const fd = new FormData(this);
+        try {
+            const res = await fetch('/api/settings/ssl', { method: 'POST', body: fd });
+            if(res.ok) {
+                showToast('SSL settings saved. Restart panel to apply.');
+            } else {
+                showToast('Failed to save settings', 'error');
+            }
+        } catch(e) {
+            showToast('Network error', 'error');
+        }
+    });
+
+    // Restore Form AJAX
+    const fileInput = document.getElementById('file-upload');
+    const fileLabel = document.querySelector('label[for="file-upload"]');
+    fileInput.addEventListener('change', function() {
+        if(this.files.length > 0) fileLabel.innerText = this.files[0].name;
+    });
+
+    document.getElementById('restore-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if(!fileInput.files.length) return showToast('Please select a file', 'error');
+        if(!confirm('This will overwrite current configs and restart services. Continue?')) return;
+        
+        const fd = new FormData(this);
+        try {
+            const res = await fetch('/api/backup/upload', { method: 'POST', body: fd });
+            if(res.ok) {
+                showToast('Backup restored successfully');
+                setTimeout(() => window.location.reload(), 2000);
+            } else {
+                showToast('Restore failed', 'error');
+            }
+        } catch(e) {
+            showToast('Network error', 'error');
         }
     });
   </script>
