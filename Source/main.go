@@ -26,7 +26,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	toml "github.com/pelletier/go-toml/v2"
-	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/net"
 )
@@ -119,6 +118,13 @@ var (
 	presetsMutex       sync.Mutex
 	serverPresets      map[string]ServerPreset
 	serverPresetsMutex sync.Mutex
+
+	// CPU calculation state
+	cpuMu       sync.Mutex
+	lastTotal   uint64
+	lastIdleAll uint64
+	lastSteal   uint64
+	hasLast     bool
 )
 
 func main() {
@@ -910,31 +916,109 @@ func systemInfoHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, info)
 }
 
+// CPUPercentRaw returns instantaneous total CPU utilization by reading /proc/stat.
+// First call initializes and returns 0; subsequent calls return busy/total * 100.
+// This implementation explicitly excludes 'steal' time from usage to reflect only server resource consumption.
+func CPUPercentRaw() (float64, error) {
+	f, err := os.Open("/proc/stat")
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+
+	rd := bufio.NewReader(f)
+	line, err := rd.ReadString('\n')
+	if err != nil && err != io.EOF {
+		return 0, err
+	}
+	fields := strings.Fields(line)
+	if len(fields) < 5 || fields[0] != "cpu" {
+		return 0, fmt.Errorf("unexpected /proc/stat format")
+	}
+
+	var nums []uint64
+	for i := 1; i < len(fields); i++ {
+		v, err := strconv.ParseUint(fields[i], 10, 64)
+		if err != nil {
+			break
+		}
+		nums = append(nums, v)
+	}
+	if len(nums) < 4 {
+		return 0, fmt.Errorf("insufficient cpu fields")
+	}
+
+	var user, nice, system, idle, iowait, irq, softirq, steal uint64
+	user = nums[0]
+	if len(nums) > 1 {
+		nice = nums[1]
+	}
+	if len(nums) > 2 {
+		system = nums[2]
+	}
+	if len(nums) > 3 {
+		idle = nums[3]
+	}
+	if len(nums) > 4 {
+		iowait = nums[4]
+	}
+	if len(nums) > 5 {
+		irq = nums[5]
+	}
+	if len(nums) > 6 {
+		softirq = nums[6]
+	}
+	if len(nums) > 7 {
+		steal = nums[7]
+	}
+
+	idleAll := idle + iowait
+	nonIdle := user + nice + system + irq + softirq + steal
+	total := idleAll + nonIdle
+
+	cpuMu.Lock()
+	defer cpuMu.Unlock()
+
+	if !hasLast {
+		lastTotal = total
+		lastIdleAll = idleAll
+		lastSteal = steal
+		hasLast = true
+		return 0, nil
+	}
+
+	totald := total - lastTotal
+	idled := idleAll - lastIdleAll
+	steald := steal - lastSteal
+
+	lastTotal = total
+	lastIdleAll = idleAll
+	lastSteal = steal
+
+	if totald == 0 {
+		return 0, nil
+	}
+
+	// busy time includes steal because nonIdle includes steal
+	busy := totald - idled
+
+	// We want to calculate usage EXCLUDING steal (only what the server used)
+	serverBusy := busy
+	if serverBusy >= steald {
+		serverBusy -= steald
+	}
+
+	pct := float64(serverBusy) / float64(totald) * 100.0
+	if pct > 100 {
+		pct = 100
+	}
+	return pct, nil
+}
+
 func getSystemInfo() (*SystemInfo, error) {
-	t1, _ := cpu.Times(false)
-	time.Sleep(time.Second)
-	t2, _ := cpu.Times(false)
-	if len(t1) == 0 || len(t2) == 0 {
-		return nil, fmt.Errorf("no cpu info")
-	}
-	t1_all, t2_all := t1[0], t2[0]
+	// Use custom CPU calculation
+	usage, _ := CPUPercentRaw()
 
-	// Calculate Total Time (Sum of all fields)
-	// User, System, Idle, Nice, Iowait, Irq, Softirq, Steal, Guest, GuestNice
-	total1 := t1_all.User + t1_all.System + t1_all.Idle + t1_all.Nice + t1_all.Iowait + t1_all.Irq + t1_all.Softirq + t1_all.Steal + t1_all.Guest + t1_all.GuestNice
-	total2 := t2_all.User + t2_all.System + t2_all.Idle + t2_all.Nice + t2_all.Iowait + t2_all.Irq + t2_all.Softirq + t2_all.Steal + t2_all.Guest + t2_all.GuestNice
-	total := total2 - total1
-
-	// Calculate Active Usage (Server usage only: User + System + Nice + Irq + Softirq)
-	// Excluding Steal, Idle, Iowait.
-	active1 := t1_all.User + t1_all.System + t1_all.Nice + t1_all.Irq + t1_all.Softirq
-	active2 := t2_all.User + t2_all.System + t2_all.Nice + t2_all.Irq + t2_all.Softirq
-	active := active2 - active1
-
-	usage := 0.0
-	if total > 0 {
-		usage = active / total * 100
-	}
 	memInfo, _ := mem.VirtualMemory()
 	netStats, _ := net.IOCounters(false)
 	var up, down uint64
