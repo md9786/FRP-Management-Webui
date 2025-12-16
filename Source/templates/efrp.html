@@ -104,6 +104,7 @@
     outline: none;
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
   }
+  .form-label { color: #94a3b8; margin-bottom: 0.5rem; display: block; font-size: 0.875rem; }
 
   .log-filter-btn { 
     background-color: rgba(255, 255, 255, 0.05); 
@@ -129,11 +130,30 @@
         <div class="max-w-4xl mx-auto">
           <h1 class="text-2xl font-semibold text-gray-100 mb-4">Manage EFRP</h1>
           <div class="card p-6 mb-4 shadow-lg">
-            <div class="flex space-x-3 mb-3">
-              <button onclick="performAction('/efrp/start')" class="btn-success px-4 py-2 text-white font-medium">Start</button>
-              <button onclick="performAction('/efrp/stop')" class="btn-danger px-4 py-2 text-white font-medium">Stop</button>
+            <h5 class="text-lg font-semibold text-gray-100 mb-4">Service Control</h5>
+            <div class="flex space-x-3 mb-6">
+              <button onclick="performAction('/efrp/start')" class="btn-success px-4 py-2 text-white font-medium">Start Service</button>
+              <button onclick="performAction('/efrp/stop')" class="btn-danger px-4 py-2 text-white font-medium">Stop Service</button>
               <a href="/" class="btn-secondary px-4 py-2 text-gray-200 text-center">Back</a>
             </div>
+
+            <hr class="border-gray-600 mb-6">
+
+            <h5 class="text-lg font-semibold text-gray-100 mb-4">Error Handling Configuration</h5>
+            <form id="efrp-config-form" class="space-y-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="primary_domain" class="form-label">Primary Domain</label>
+                        <input type="text" id="primary_domain" name="primary_domain" value="{{ .PrimaryDomain }}" class="form-control w-full p-2" placeholder="e.g. main.example.com">
+                    </div>
+                    <div>
+                        <label for="secondary_domain" class="form-label">Secondary Domain</label>
+                        <input type="text" id="secondary_domain" name="secondary_domain" value="{{ .SecondaryDomain }}" class="form-control w-full p-2" placeholder="e.g. backup.example.com">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary px-4 py-2 text-white font-medium">Save Configuration</button>
+            </form>
+
             <h6 class="text-sm font-medium text-gray-400 mt-3">Live Logs</h6>
             <div class="flex items-center space-x-2 my-2">
               <div class="w-32 flex-shrink-0">
@@ -195,6 +215,32 @@
             showToast('Network error', 'error');
         }
     }
+
+    document.getElementById('efrp-config-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const primary = document.getElementById('primary_domain').value;
+        const secondary = document.getElementById('secondary_domain').value;
+        const btn = this.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+        btn.innerText = 'Saving...';
+        
+        try {
+            const res = await fetch('/efrp/save', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ primary_domain: primary, secondary_domain: secondary })
+            });
+            if(res.ok) {
+                showToast('Configuration saved successfully');
+            } else {
+                showToast('Failed to save configuration', 'error');
+            }
+        } catch(e) {
+            showToast('Network error', 'error');
+        } finally {
+            btn.innerText = originalText;
+        }
+    });
 
     function cleanLogLine(line) {
         if (line.includes('frpc[') && (line.includes(' [I] ') || line.includes(' [W] ') || line.includes(' [E] '))) {

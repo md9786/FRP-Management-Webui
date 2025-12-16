@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -303,8 +304,14 @@
                 <p class="text-gray-400 mb-4 text-sm">This will download the latest version of FRP from GitHub, install the binaries, and set up the systemd services. This can be used for a fresh install or to update an existing one.</p>
                 <button id="install-btn" class="btn-primary w-full px-4 py-3 text-white font-medium">Install/Update FRP</button>
               </div>
-              <!-- Uninstall Card -->
+              <!-- Restart Panel Card -->
               <div class="container-card">
+                <h2 class="text-xl font-semibold mb-4 text-yellow-400">Restart FRP Panel</h2>
+                <p class="text-gray-400 mb-4 text-sm">Restarts the UI service (frp-ui). Use this if the interface becomes unresponsive.</p>
+                <button id="restart-panel-btn" class="btn-warning w-full px-4 py-3 text-white font-medium">Restart Panel</button>
+              </div>
+              <!-- Uninstall Card -->
+              <div class="container-card md:col-span-2">
                 <h2 class="text-xl font-semibold mb-4 text-red-400">Uninstall FRP</h2>
                 <p class="text-gray-400 mb-4 text-sm">
                   <span class="font-bold text-yellow-400">Warning:</span> This action is irreversible. It will stop all FRP services, remove the binaries, delete all server and client configurations, and remove the systemd service files.
@@ -507,6 +514,7 @@
     // --- System Management ---
     const installBtn = document.getElementById('install-btn');
     const uninstallBtn = document.getElementById('uninstall-btn');
+    const restartPanelBtn = document.getElementById('restart-panel-btn');
     const statusDiv = document.getElementById('system-status');
 
     installBtn.addEventListener('click', async () => {
@@ -534,6 +542,27 @@
         installBtn.disabled = false;
         installBtn.textContent = 'Install/Update FRP';
       }
+    });
+
+    restartPanelBtn.addEventListener('click', async () => {
+        if (!confirm('Are you sure you want to restart the FRP Panel? The page will reload in a few seconds.')) return;
+        
+        restartPanelBtn.disabled = true;
+        restartPanelBtn.textContent = 'Restarting...';
+        
+        try {
+            const response = await fetch('/api/system/restart-panel', { method: 'POST' });
+            if (response.ok) {
+                showToast('Panel restarting...');
+                setTimeout(() => window.location.reload(), 3000);
+            } else {
+                throw new Error('Failed to restart panel');
+            }
+        } catch (error) {
+            showToast('Restart failed', 'error');
+            restartPanelBtn.disabled = false;
+            restartPanelBtn.textContent = 'Restart Panel';
+        }
     });
 
     uninstallBtn.addEventListener('click', async () => {
