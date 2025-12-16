@@ -2,7 +2,7 @@
 
 # --- Configuration ---
 CONFIG_DIR="/root/frp/client" # Directory containing FRP client configuration files
-ERROR_STRING="connect to server error: timeout|connect to local service.*error: dial tcp.*connection refused" # Updated error string pattern
+ERROR_STRING="connect to server error: dial tcp |connect to server error: timeout|connect to local service.*error: dial tcp.*connection refused" # Updated error string pattern
 LOG_FILE="/var/log/frp_monitor.log" # Log file for this script's actions
 MAX_RESTARTS_IN_ROW=3 # Maximum consecutive restarts per service before waiting
 CHECK_INTERVAL_SECONDS=10 # How often to check logs for errors (in seconds)
