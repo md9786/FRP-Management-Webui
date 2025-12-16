@@ -1,3 +1,4 @@
+
 package main
 
 import (
@@ -37,6 +38,7 @@ const (
 	ServerPresetsFile = "/root/frp/server_presets.json"
 	UsersFile         = "/root/frp/users.json"
 	SettingsFile      = "/root/frp/settings.json"
+	EFRPConfigFile    = "/root/frp/efrp_config.json"
 )
 
 // --- Struct Definitions ---
@@ -74,6 +76,11 @@ type ServerPreset struct {
 	ProtoChoice string `json:"proto_choice"`
 	UseMux      bool   `json:"use_mux"`
 	Token       string `json:"token"`
+}
+
+type EFRPConfig struct {
+	PrimaryDomain   string `json:"primary_domain"`
+	SecondaryDomain string `json:"secondary_domain"`
 }
 
 type NetworkDataPoint struct {
@@ -118,6 +125,7 @@ var (
 	presetsMutex       sync.Mutex
 	serverPresets      map[string]ServerPreset
 	serverPresetsMutex sync.Mutex
+	efrpSettings       EFRPConfig
 
 	// CPU calculation state
 	cpuMu       sync.Mutex
@@ -134,6 +142,7 @@ func main() {
 	users = make(map[string]User)
 	loadUsers()
 	loadPanelSettings()
+	loadEFRPConfig()
 	presets = make(map[string]Preset)
 	serverPresets = make(map[string]ServerPreset)
 	loadPresets()
@@ -167,11 +176,12 @@ func main() {
 		protected.POST("/api/presets/server/delete", deleteServerPreset)
 		protected.GET("/api/logs/:type/:name", queryLogs)
 		protected.GET("/ws/logs/:type/:name", streamLogs)
-
-		// Backup & SSL
+		
+		// Backup, SSL, Restart
 		protected.GET("/api/backup/download", downloadBackup)
 		protected.POST("/api/backup/upload", uploadBackup)
 		protected.POST("/api/settings/ssl", updateSSLSettings)
+		protected.POST("/api/system/restart-panel", restartPanel)
 
 		// --- Page Routes ---
 		protected.GET("/", home)
@@ -196,7 +206,7 @@ func main() {
 		protected.POST("/client/set_domain_all", setAllClientDomains)
 		protected.GET("/client/edit/:name", clientEditForm)
 		protected.POST("/client/edit/:name", clientEdit)
-
+		
 		protected.GET("/server/start/:name", serverStart)
 		protected.GET("/server/stop/:name", serverStop)
 		protected.GET("/server/restart/:name", serverRestart)
@@ -211,6 +221,7 @@ func main() {
 		protected.GET("/efrp", efrp)
 		protected.GET("/efrp/start", efrpStart)
 		protected.GET("/efrp/stop", efrpStop)
+		protected.POST("/efrp/save", saveEFRPConfigHandler)
 		protected.GET("/status", showStatus)
 		protected.POST("/install", installFRP)
 		protected.GET("/remove", removeForm)
@@ -253,10 +264,10 @@ func savePanelSettingsToFile() error {
 func updateSSLSettings(c *gin.Context) {
 	certPath := c.PostForm("cert_path")
 	keyPath := c.PostForm("key_path")
-
+	
 	panelSettings.CertPath = certPath
 	panelSettings.KeyPath = keyPath
-
+	
 	if err := savePanelSettingsToFile(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save settings"})
 		return
@@ -266,6 +277,14 @@ func updateSSLSettings(c *gin.Context) {
 	go func() {
 		time.Sleep(1 * time.Second)
 		os.Exit(0) // Exit process; systemd should restart it
+	}()
+}
+
+func restartPanel(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Restarting panel..."})
+	go func() {
+		time.Sleep(1 * time.Second)
+		exec.Command("systemctl", "restart", "frp-ui").Run()
 	}()
 }
 
@@ -289,18 +308,18 @@ func downloadBackup(c *gin.Context) {
 		if err != nil {
 			return err
 		}
-
+		
 		zipFile, err := zipWriter.Create(relPath)
 		if err != nil {
 			return err
 		}
-
+		
 		fsFile, err := os.Open(path)
 		if err != nil {
 			return err
 		}
 		defer fsFile.Close()
-
+		
 		_, err = io.Copy(zipFile, fsFile)
 		return err
 	})
@@ -319,6 +338,9 @@ func uploadBackup(c *gin.Context) {
 		return
 	}
 
+	// Stop all services before restore
+	stopAllServices()
+
 	// Unzip and restore
 	archive, err := zip.OpenReader(dst)
 	if err != nil {
@@ -327,10 +349,12 @@ func uploadBackup(c *gin.Context) {
 	}
 	defer archive.Close()
 
-	// Stop all services before restore
-	stopAllServices()
-
 	for _, f := range archive.File {
+		// Prevent path traversal
+		if strings.Contains(f.Name, "..") {
+			continue
+		}
+		
 		fpath := filepath.Join("/root/frp", f.Name)
 		if f.FileInfo().IsDir() {
 			os.MkdirAll(fpath, os.ModePerm)
@@ -352,18 +376,41 @@ func uploadBackup(c *gin.Context) {
 		outFile.Close()
 		rc.Close()
 	}
+	
+	// Reload daemon in case units changed (though backups are usually configs)
+	exec.Command("systemctl", "daemon-reload").Run()
 
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Backup restored. Please restart services manually or via dashboard."})
 }
 
 func stopAllServices() {
-	// Quick helper to stop known services
-	units := runCmdOutput("systemctl", "list-units", "frp*", "--state=running", "--no-pager", "--plain")
-	scanner := bufio.NewScanner(strings.NewReader(units))
-	for scanner.Scan() {
-		fields := strings.Fields(scanner.Text())
-		if len(fields) > 0 {
-			runCmd("systemctl", "stop", fields[0])
+	// 1. Stop Clients based on known configs
+	clientFiles, _ := filepath.Glob(filepath.Join(ClientConfigDir, "*.toml"))
+	for _, f := range clientFiles {
+		name := strings.TrimSuffix(filepath.Base(f), ".toml")
+		runCmd("systemctl", "stop", "frpc@"+name)
+	}
+
+	// 2. Stop Servers based on known configs
+	serverFiles, _ := filepath.Glob(filepath.Join(ServerConfigDir, "*.toml"))
+	for _, f := range serverFiles {
+		name := strings.TrimSuffix(filepath.Base(f), ".toml")
+		runCmd("systemctl", "stop", "frps@"+name)
+	}
+	
+	// 3. Robust catch-all for any running frp service units, but PROTECT frp-ui
+	units := runCmdOutput("systemctl", "list-units", "frp*", "--state=running", "--no-pager", "--plain", "--no-legend")
+	if units != "" {
+		scanner := bufio.NewScanner(strings.NewReader(units))
+		for scanner.Scan() {
+			fields := strings.Fields(scanner.Text())
+			if len(fields) > 0 {
+				unit := fields[0]
+				// Critical: Do not stop the panel itself!
+				if unit != "frp-ui.service" && unit != "frp-ui" {
+					runCmd("systemctl", "stop", unit)
+				}
+			}
 		}
 	}
 }
@@ -376,28 +423,24 @@ func connectionStatusHandler(c *gin.Context) {
 
 	// Helper to fetch metrics
 	getMetrics := func(configPath string) (int64, int64, int64) {
-		// Logic to parse TOML and fetch from admin port
-		// 1. Read file
 		content, err := ioutil.ReadFile(configPath)
 		if err != nil {
 			return 0, 0, 0
 		}
-
-		// 2. Parse basic TOML to find webServer.port (or admin_port)
+		
 		var cfg map[string]interface{}
 		if err := toml.Unmarshal(content, &cfg); err != nil {
 			return 0, 0, 0
 		}
-
-		// Check for webServer section
+		
 		var port int
 		if ws, ok := cfg["webServer"].(map[string]interface{}); ok {
-			if p, ok := ws["port"].(float64); ok { // JSON/TOML unmarshal often gives float64 for generic numbers
+			if p, ok := ws["port"].(float64); ok {
 				port = int(p)
 			} else if p, ok := ws["port"].(int64); ok {
 				port = int(p)
 			}
-		} else if ap, ok := cfg["adminPort"].(int64); ok { // Legacy/Other style
+		} else if ap, ok := cfg["adminPort"].(int64); ok {
 			port = int(ap)
 		}
 
@@ -405,16 +448,13 @@ func connectionStatusHandler(c *gin.Context) {
 			return 0, 0, 0
 		}
 
-		// 3. Query metrics
 		client := http.Client{Timeout: 500 * time.Millisecond}
-		// Try TCP stats
 		resp, err := client.Get(fmt.Sprintf("http://127.0.0.1:%d/api/proxy/tcp", port))
 		if err != nil {
 			return 0, 0, 0
 		}
 		defer resp.Body.Close()
 
-		// Parse Response: {"proxies": [{"name": "...", "today_traffic_in": 123, "today_traffic_out": 456, "cur_conns": 1}]}
 		var apiResp struct {
 			Proxies []struct {
 				TrafficIn  int64 `json:"today_traffic_in"`
@@ -491,7 +531,7 @@ func deleteConfigAndService(c *gin.Context, configType string) {
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Configuration deleted"})
 }
 
-// --- Previous Handlers (Keep Existing Logic) ---
+// --- Previous Handlers ---
 
 func setupFRPForm(c *gin.Context) {
 	username, _ := c.Get("username")
@@ -643,7 +683,7 @@ func getServiceStatus(serviceName string) string {
 	if !isActive(serviceName) {
 		return "stopped"
 	}
-	logOutput := runCmdOutput("journalctl", "-u", serviceName, "-n", "20", "--no-pager")
+	logOutput := runCmdOutput("journalctl", "-u", serviceName, "-n", "5", "--no-pager")
 	if regexp.MustCompile(`(?i)(\[E\]|error|fail)`).MatchString(logOutput) {
 		return "error"
 	}
@@ -916,9 +956,6 @@ func systemInfoHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, info)
 }
 
-// CPUPercentRaw returns instantaneous total CPU utilization by reading /proc/stat.
-// First call initializes and returns 0; subsequent calls return busy/total * 100.
-// This implementation explicitly excludes 'steal' time from usage to reflect only server resource consumption.
 func CPUPercentRaw() (float64, error) {
 	f, err := os.Open("/proc/stat")
 	if err != nil {
@@ -944,33 +981,19 @@ func CPUPercentRaw() (float64, error) {
 		}
 		nums = append(nums, v)
 	}
-	if len(nums) < 4 {
+	if len(nums) < 4 { 
 		return 0, fmt.Errorf("insufficient cpu fields")
 	}
 
 	var user, nice, system, idle, iowait, irq, softirq, steal uint64
 	user = nums[0]
-	if len(nums) > 1 {
-		nice = nums[1]
-	}
-	if len(nums) > 2 {
-		system = nums[2]
-	}
-	if len(nums) > 3 {
-		idle = nums[3]
-	}
-	if len(nums) > 4 {
-		iowait = nums[4]
-	}
-	if len(nums) > 5 {
-		irq = nums[5]
-	}
-	if len(nums) > 6 {
-		softirq = nums[6]
-	}
-	if len(nums) > 7 {
-		steal = nums[7]
-	}
+	if len(nums) > 1 { nice = nums[1] }
+	if len(nums) > 2 { system = nums[2] }
+	if len(nums) > 3 { idle = nums[3] }
+	if len(nums) > 4 { iowait = nums[4] }
+	if len(nums) > 5 { irq = nums[5] }
+	if len(nums) > 6 { softirq = nums[6] }
+	if len(nums) > 7 { steal = nums[7] }
 
 	idleAll := idle + iowait
 	nonIdle := user + nice + system + irq + softirq + steal
@@ -998,11 +1021,8 @@ func CPUPercentRaw() (float64, error) {
 	if totald == 0 {
 		return 0, nil
 	}
-
-	// busy time includes steal because nonIdle includes steal
+	
 	busy := totald - idled
-
-	// We want to calculate usage EXCLUDING steal (only what the server used)
 	serverBusy := busy
 	if serverBusy >= steald {
 		serverBusy -= steald
@@ -1016,7 +1036,6 @@ func CPUPercentRaw() (float64, error) {
 }
 
 func getSystemInfo() (*SystemInfo, error) {
-	// Use custom CPU calculation
 	usage, _ := CPUPercentRaw()
 
 	memInfo, _ := mem.VirtualMemory()
@@ -1029,12 +1048,10 @@ func getSystemInfo() (*SystemInfo, error) {
 			if diff > 0 {
 				var cUp, cDown, lUp, lDown uint64
 				for _, s := range netStats {
-					cUp += s.BytesSent
-					cDown += s.BytesRecv
+					cUp += s.BytesSent; cDown += s.BytesRecv
 				}
 				for _, s := range lastNetStats {
-					lUp += s.BytesSent
-					lDown += s.BytesRecv
+					lUp += s.BytesSent; lDown += s.BytesRecv
 				}
 				up = uint64(float64(cUp-lUp) / diff)
 				down = uint64(float64(cDown-lDown) / diff)
@@ -1063,9 +1080,7 @@ func installFRP(c *gin.Context) {
 	platform := fmt.Sprintf("%s_%s", runtime.GOOS, arch)
 	resp, _ := http.Get("https://api.github.com/repos/fatedier/frp/releases/latest")
 	defer resp.Body.Close()
-	var rel struct {
-		TagName string `json:"tag_name"`
-	}
+	var rel struct{ TagName string `json:"tag_name"` }
 	json.NewDecoder(resp.Body).Decode(&rel)
 	ver := strings.TrimPrefix(rel.TagName, "v")
 	url := fmt.Sprintf("https://github.com/fatedier/frp/releases/download/v%s/frp_%s_%s.tar.gz", ver, ver, platform)
@@ -1078,7 +1093,7 @@ func installFRP(c *gin.Context) {
 	runCmd("mkdir", "-p", ServerConfigDir)
 	runCmd("mkdir", "-p", ClientConfigDir)
 	runCmd("mkdir", "-p", filepath.Dir(PresetsFile))
-
+	
 	svcS := `[Unit]
 Description=FRP Server (%i)
 After=network.target
@@ -1100,7 +1115,7 @@ RestartSec=5s
 [Install]
 WantedBy=multi-user.target`
 	ioutil.WriteFile("/etc/systemd/system/frpc@.service", []byte(svcC), 0644)
-
+	
 	runCmd("systemctl", "daemon-reload")
 	os.Remove("/tmp/frp.tar.gz")
 	os.RemoveAll(dir)
@@ -1129,7 +1144,7 @@ func setupServer(c *gin.Context) {
 	}
 	fmt.Fprintf(f, "transport.tcpMux = %s\n", c.PostForm("use_mux"))
 	fmt.Fprintf(f, "auth.token = \"%s\"\n", c.PostForm("token"))
-
+	
 	runCmd("systemctl", "enable", "--now", "frps@"+name)
 	c.Redirect(302, "/manage-frp")
 }
@@ -1152,7 +1167,7 @@ func setupClient(c *gin.Context) {
 	fmt.Fprintf(f, "auth.token = \"%s\"\n", c.PostForm("auth_token"))
 	fmt.Fprintf(f, "transport.protocol = \"%s\"\n", c.PostForm("transport"))
 	fmt.Fprintf(f, "transport.tcpMux = %s\n", c.PostForm("use_mux"))
-
+	
 	for _, p := range parsePorts(c.PostForm("port_input")) {
 		fmt.Fprintf(f, "\n[[proxies]]\nname = \"tcp-%d\"\ntype = \"tcp\"\nlocalIP = \"127.0.0.1\"\nlocalPort = %d\nremotePort = %d\n", p, p, p)
 	}
@@ -1160,37 +1175,22 @@ func setupClient(c *gin.Context) {
 	c.Redirect(302, "/manage-frp")
 }
 
-func clientStart(c *gin.Context) {
-	runCmd("systemctl", "start", "frpc@"+c.Param("name"))
-	c.Redirect(302, "/manage-frp#clients:"+c.Param("name"))
-}
-func clientStop(c *gin.Context) {
-	runCmd("systemctl", "stop", "frpc@"+c.Param("name"))
-	c.Redirect(302, "/manage-frp#clients:"+c.Param("name"))
-}
-func clientRestart(c *gin.Context) {
-	runCmd("systemctl", "restart", "frpc@"+c.Param("name"))
-	c.Redirect(302, "/manage-frp#clients:"+c.Param("name"))
-}
-func clientStartAll(c *gin.Context) {
+func clientStart(c *gin.Context) { runCmd("systemctl", "start", "frpc@"+c.Param("name")); c.Redirect(302, "/manage-frp#clients:"+c.Param("name")) }
+func clientStop(c *gin.Context) { runCmd("systemctl", "stop", "frpc@"+c.Param("name")); c.Redirect(302, "/manage-frp#clients:"+c.Param("name")) }
+func clientRestart(c *gin.Context) { runCmd("systemctl", "restart", "frpc@"+c.Param("name")); c.Redirect(302, "/manage-frp#clients:"+c.Param("name")) }
+func clientStartAll(c *gin.Context) { 
 	files, _ := filepath.Glob(filepath.Join(ClientConfigDir, "*.toml"))
-	for _, f := range files {
-		runCmd("systemctl", "start", "frpc@"+strings.TrimSuffix(filepath.Base(f), ".toml"))
-	}
+	for _, f := range files { runCmd("systemctl", "start", "frpc@"+strings.TrimSuffix(filepath.Base(f), ".toml")) }
 	c.Redirect(302, "/manage-frp#clients")
 }
 func clientStopAll(c *gin.Context) {
 	files, _ := filepath.Glob(filepath.Join(ClientConfigDir, "*.toml"))
-	for _, f := range files {
-		runCmd("systemctl", "stop", "frpc@"+strings.TrimSuffix(filepath.Base(f), ".toml"))
-	}
+	for _, f := range files { runCmd("systemctl", "stop", "frpc@"+strings.TrimSuffix(filepath.Base(f), ".toml")) }
 	c.Redirect(302, "/manage-frp#clients")
 }
 func clientRestartAll(c *gin.Context) {
 	files, _ := filepath.Glob(filepath.Join(ClientConfigDir, "*.toml"))
-	for _, f := range files {
-		runCmd("systemctl", "restart", "frpc@"+strings.TrimSuffix(filepath.Base(f), ".toml"))
-	}
+	for _, f := range files { runCmd("systemctl", "restart", "frpc@"+strings.TrimSuffix(filepath.Base(f), ".toml")) }
 	c.Redirect(302, "/manage-frp#clients")
 }
 
@@ -1198,7 +1198,7 @@ func setAllClientDomains(c *gin.Context) {
 	d := c.PostForm("domain")
 	files, _ := filepath.Glob(filepath.Join(ClientConfigDir, "*.toml"))
 	re := regexp.MustCompile(`(serverAddr\s*=\s*")[^"]*(")`)
-	rep := []byte("${1}" + d + "${2}")
+	rep := []byte("${1}"+d+"${2}")
 	for _, f := range files {
 		b, _ := ioutil.ReadFile(f)
 		ioutil.WriteFile(f, re.ReplaceAll(b, rep), 0644)
@@ -1216,7 +1216,7 @@ func clientEdit(c *gin.Context) {
 	old := c.Param("name")
 	new := cleanName(c.PostForm("name"))
 	content := c.PostForm("content")
-
+	
 	if old != new {
 		runCmd("systemctl", "disable", "--now", "frpc@"+old)
 		os.Rename(filepath.Join(ClientConfigDir, old+".toml"), filepath.Join(ClientConfigDir, new+".toml"))
@@ -1230,37 +1230,22 @@ func clientEdit(c *gin.Context) {
 	}
 }
 
-func serverStart(c *gin.Context) {
-	runCmd("systemctl", "start", "frps@"+c.Param("name"))
-	c.Redirect(302, "/manage-frp#servers:"+c.Param("name"))
-}
-func serverStop(c *gin.Context) {
-	runCmd("systemctl", "stop", "frps@"+c.Param("name"))
-	c.Redirect(302, "/manage-frp#servers:"+c.Param("name"))
-}
-func serverRestart(c *gin.Context) {
-	runCmd("systemctl", "restart", "frps@"+c.Param("name"))
-	c.Redirect(302, "/manage-frp#servers:"+c.Param("name"))
-}
+func serverStart(c *gin.Context) { runCmd("systemctl", "start", "frps@"+c.Param("name")); c.Redirect(302, "/manage-frp#servers:"+c.Param("name")) }
+func serverStop(c *gin.Context) { runCmd("systemctl", "stop", "frps@"+c.Param("name")); c.Redirect(302, "/manage-frp#servers:"+c.Param("name")) }
+func serverRestart(c *gin.Context) { runCmd("systemctl", "restart", "frps@"+c.Param("name")); c.Redirect(302, "/manage-frp#servers:"+c.Param("name")) }
 func serverStartAll(c *gin.Context) {
 	files, _ := filepath.Glob(filepath.Join(ServerConfigDir, "*.toml"))
-	for _, f := range files {
-		runCmd("systemctl", "start", "frps@"+strings.TrimSuffix(filepath.Base(f), ".toml"))
-	}
+	for _, f := range files { runCmd("systemctl", "start", "frps@"+strings.TrimSuffix(filepath.Base(f), ".toml")) }
 	c.Redirect(302, "/manage-frp#servers")
 }
 func serverStopAll(c *gin.Context) {
 	files, _ := filepath.Glob(filepath.Join(ServerConfigDir, "*.toml"))
-	for _, f := range files {
-		runCmd("systemctl", "stop", "frps@"+strings.TrimSuffix(filepath.Base(f), ".toml"))
-	}
+	for _, f := range files { runCmd("systemctl", "stop", "frps@"+strings.TrimSuffix(filepath.Base(f), ".toml")) }
 	c.Redirect(302, "/manage-frp#servers")
 }
 func serverRestartAll(c *gin.Context) {
 	files, _ := filepath.Glob(filepath.Join(ServerConfigDir, "*.toml"))
-	for _, f := range files {
-		runCmd("systemctl", "restart", "frps@"+strings.TrimSuffix(filepath.Base(f), ".toml"))
-	}
+	for _, f := range files { runCmd("systemctl", "restart", "frps@"+strings.TrimSuffix(filepath.Base(f), ".toml")) }
 	c.Redirect(302, "/manage-frp#servers")
 }
 
@@ -1286,15 +1271,60 @@ func serverEdit(c *gin.Context) {
 	}
 }
 
-func efrp(c *gin.Context) { c.HTML(200, "efrp.html", nil) }
-func efrpStart(c *gin.Context) {
-	runCmd("systemctl", "enable", "--now", "EFRP.service")
-	c.Redirect(302, "/efrp")
+// EFRP Logic
+func loadEFRPConfig() {
+	file, err := ioutil.ReadFile(EFRPConfigFile)
+	if err == nil {
+		json.Unmarshal(file, &efrpSettings)
+	}
 }
-func efrpStop(c *gin.Context) {
-	runCmd("systemctl", "disable", "--now", "EFRP.service")
-	c.Redirect(302, "/efrp")
+
+func saveEFRPConfigHandler(c *gin.Context) {
+	var config EFRPConfig
+	if err := c.ShouldBindJSON(&config); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data"})
+		return
+	}
+	efrpSettings = config
+	data, err := json.MarshalIndent(efrpSettings, "", "  ")
+	if err == nil {
+		ioutil.WriteFile(EFRPConfigFile, data, 0644)
+	}
+
+	// Update EFRP.sh
+	shFile := "/root/frp/EFRP.sh"
+	if content, err := ioutil.ReadFile(shFile); err == nil {
+		s := string(content)
+		// Update PRIMARY_DOMAIN
+		rePrimary := regexp.MustCompile(`(?m)^(\s*PRIMARY_DOMAIN\s*=\s*).*$`)
+		if rePrimary.MatchString(s) {
+			s = rePrimary.ReplaceAllString(s, fmt.Sprintf("${1}\"%s\"", config.PrimaryDomain))
+		} else {
+			s += fmt.Sprintf("\nPRIMARY_DOMAIN=\"%s\"", config.PrimaryDomain)
+		}
+		
+		// Update SECONDARY_DOMAIN
+		reSecondary := regexp.MustCompile(`(?m)^(\s*SECONDARY_DOMAIN\s*=\s*).*$`)
+		if reSecondary.MatchString(s) {
+			s = reSecondary.ReplaceAllString(s, fmt.Sprintf("${1}\"%s\"", config.SecondaryDomain))
+		} else {
+			s += fmt.Sprintf("\nSECONDARY_DOMAIN=\"%s\"", config.SecondaryDomain)
+		}
+		
+		ioutil.WriteFile(shFile, []byte(s), 0755)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }
+
+func efrp(c *gin.Context) { 
+	c.HTML(http.StatusOK, "efrp.html", gin.H{
+		"PrimaryDomain": efrpSettings.PrimaryDomain,
+		"SecondaryDomain": efrpSettings.SecondaryDomain,
+	}) 
+}
+func efrpStart(c *gin.Context) { runCmd("systemctl", "enable", "--now", "EFRP.service"); c.Redirect(302, "/efrp") }
+func efrpStop(c *gin.Context) { runCmd("systemctl", "disable", "--now", "EFRP.service"); c.Redirect(302, "/efrp") }
 
 func showStatus(c *gin.Context) {
 	v := runCmdOutput("/usr/local/bin/frps", "--version")
@@ -1303,22 +1333,43 @@ func showStatus(c *gin.Context) {
 	c.HTML(200, "status.html", gin.H{"Version": v, "Running": r, "Enabled": e})
 }
 
-func removeForm(c *gin.Context) { c.HTML(200, "remove.html", nil) }
+func removeForm(c *gin.Context) { 
+	// Basic template fallback or redirect if template missing
+	c.String(200, "Uninstalling...")
+}
+
 func removeFRP(c *gin.Context) {
+	// Stop services first (excluding UI)
 	stopAllServices()
-	os.Remove("/etc/systemd/system/frps@.service")
-	os.Remove("/etc/systemd/system/frpc@.service")
+	
+	// Cleanup Systemd Units
+	filepath.Walk("/etc/systemd/system", func(path string, info os.FileInfo, err error) error {
+		if err == nil && !info.IsDir() && (strings.HasPrefix(info.Name(), "frpc@") || strings.HasPrefix(info.Name(), "frps@")) {
+			os.Remove(path)
+		}
+		return nil
+	})
+	
+	// Remove Binaries
 	os.Remove("/usr/local/bin/frpc")
 	os.Remove("/usr/local/bin/frps")
-	os.RemoveAll("/root/frp")
-	runCmd("systemctl", "daemon-reload")
-	c.String(200, "Removed")
+	
+	// Trigger delayed self-destruct
+	go func() {
+		time.Sleep(3 * time.Second)
+		runCmd("systemctl", "stop", "frp-ui")
+		runCmd("systemctl", "disable", "frp-ui")
+		os.Remove("/etc/systemd/system/frp-ui.service")
+		runCmd("systemctl", "daemon-reload")
+		os.RemoveAll("/root/frp")
+		os.Exit(0)
+	}()
+	
+	c.String(http.StatusOK, "FRP Uninstalled. Panel will shutdown in 3 seconds.")
 }
 
 func optimize() { /* ... kept simple ... */ }
-func cleanName(n string) string {
-	return regexp.MustCompile("[^a-zA-Z0-9-]+").ReplaceAllString(strings.ReplaceAll(n, " ", "-"), "")
-}
+func cleanName(n string) string { return regexp.MustCompile("[^a-zA-Z0-9-]+").ReplaceAllString(strings.ReplaceAll(n, " ", "-"), "") }
 func parsePorts(s string) []int {
 	var p []int
 	for _, part := range strings.Split(s, ",") {
@@ -1326,9 +1377,7 @@ func parsePorts(s string) []int {
 			sp := strings.Split(part, "-")
 			start, _ := strconv.Atoi(sp[0])
 			end, _ := strconv.Atoi(sp[1])
-			for i := start; i <= end; i++ {
-				p = append(p, i)
-			}
+			for i := start; i <= end; i++ { p = append(p, i) }
 		} else {
 			pt, _ := strconv.Atoi(part)
 			p = append(p, pt)
@@ -1337,10 +1386,5 @@ func parsePorts(s string) []int {
 	return p
 }
 func runCmd(c ...string) { exec.Command(c[0], c[1:]...).Run() }
-func runCmdOutput(c ...string) string {
-	o, _ := exec.Command(c[0], c[1:]...).Output()
-	return strings.TrimSpace(string(o))
-}
-func isActive(s string) bool {
-	return strings.TrimSpace(string(runCmdOutput("systemctl", "is-active", s))) == "active"
-}
+func runCmdOutput(c ...string) string { o, _ := exec.Command(c[0], c[1:]...).Output(); return strings.TrimSpace(string(o)) }
+func isActive(s string) bool { return strings.TrimSpace(string(runCmdOutput("systemctl", "is-active", s))) == "active" }
