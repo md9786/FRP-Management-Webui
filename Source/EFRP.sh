@@ -12,8 +12,8 @@ RESTART_STABILIZE_SLEEP=3 # Time to wait after a restart for service to stabiliz
 RESTART_WAIT_SECONDS=10 # Time to wait after reaching max restarts before trying again
 
 # --- Failover settings ---
-PRIMARY_DOMAIN="your_domestic_domain"
-SECONDARY_DOMAIN="your_backup_domestic_domain"
+PRIMARY_DOMAIN="your_domestic_domain"        # main domain (matches your template)
+SECONDARY_DOMAIN="your_backup_domestic_domain"    # set your secondary domain here
 FAILOVER_AFTER_RESTARTS=2                   # switch to secondary after this many consecutive error-based restarts on a service
 PRIMARY_RECHECK_MINUTES=10                  # probe primary every N minutes while on secondary
 

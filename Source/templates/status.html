@@ -103,77 +103,79 @@
       <!-- Sidebar -->
       {{template "sidebar.html" .}}
       <div class="flex-1 p-8">
-      <!-- Main Content -->
-      <div class="flex-1 p-8">
+        <!-- Main Content -->
         <div class="max-w-4xl mx-auto">
-          <h1 class="text-2xl font-semibold text-gray-100 mb-4">FRP Status</h1>
+          <h1 class="text-2xl font-semibold text-gray-100 mb-4">FRP & EFRP Services Status</h1>
           <div class="card p-6 mb-4 shadow-lg">
+
             <h5 class="text-lg font-semibold text-gray-100 mb-3">Version</h5>
-            <pre id="version" class="log-pre p-4 mb-4 text-sm">{{ .Version }}</pre>
-            <h5 class="text-lg font-semibold text-gray-100 mb-3">Running Services</h5>
-            <pre id="running" class="log-pre p-4 mb-4 text-sm">{{ .Running }}</pre>
-            <h5 class="text-lg font-semibold text-gray-100 mb-3">Enabled Services</h5>
-            <pre id="enabled" class="log-pre p-4 mb-4 text-sm">{{ .Enabled }}</pre>
-            <h5 class="text-lg font-semibold text-gray-100 mb-3">Server Configs</h5>
-            <pre id="server-configs" class="log-pre p-4 mb-4 text-sm">{{ .ServerConfigs }}</pre>
-            <h5 class="text-lg font-semibold text-gray-100 mb-3">Client Configs</h5>
-            <pre id="client-configs" class="log-pre p-4 mb-4 text-sm">{{ .ClientConfigs }}</pre>
+            <pre id="version" class="log-pre p-4 mb-6 text-sm">{{ .Version }}</pre>
+
+            <h5 class="text-lg font-semibold text-gray-100 mb-3">Running FRP/EFRP Services</h5>
+            <pre id="running" class="log-pre p-4 mb-6 text-sm">{{ .Running }}</pre>
+
+            <h5 class="text-lg font-semibold text-gray-100 mb-3">Enabled FRP/EFRP Services</h5>
+            <pre id="enabled" class="log-pre p-4 mb-6 text-sm">{{ .Enabled }}</pre>
+
             <a href="/" class="btn-secondary px-4 py-2 text-gray-200 text-center inline-block">Back</a>
           </div>
         </div>
       </div>
     </div>
   </div>
+
   <script>
+    // Filter lines that contain "frp" or "efrp" (case-insensitive)
+    function filterFrpLines(text) {
+      if (!text || text.trim() === "") return "No FRP/EFRP services found";
+      const lines = text.split('\n');
+      const filtered = lines.filter(line => 
+        line.toLowerCase().includes('frp') || line.toLowerCase().includes('efrp')
+      );
+      return filtered.length > 0 ? filtered.join('\n') : "No FRP/EFRP services found";
+    }
+
     function processLogs(elementId) {
       const element = document.getElementById(elementId);
-      let logs = element.innerText;
-      // Split logs into lines
-      const lines = logs.split('\n');
-      // Process each line
-      const processedLines = lines.map(line => {
-        // Check if the line is an frpc log (contains [I] or similar)
-        if (line.includes('frpc[') && line.includes(' [I] ')) {
-          // Extract the initial systemd timestamp (e.g., "Aug 19 03:00:17")
-          const systemdTimestampMatch = line.match(/^[A-Za-z]{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+/);
-          const systemdTimestamp = systemdTimestampMatch ? systemdTimestampMatch[0] : '';
-          // Remove the duplicate timestamp and metadata (e.g., "2025-08-19 03:00:17.803 [I] [sub/root.go:149]")
-          const cleanedLine = line.replace(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+\s+\[I\]\s+\[[^\]]+\]\s*/, '');
-          // Return the line with the systemd timestamp prepended
-          return systemdTimestamp + cleanedLine;
-        }
-        // Return systemd lines unchanged
-        return line;
-      });
-      // Remove hostname if present
-      const finalLogs = processedLines.join('\n').replace(/dashingorder\.aeza\.network/g, '');
+      if (!element) return;
+
+      let logs = element.innerText.trim();
+
+      // Filter only FRP/EFRP related lines for running and enabled sections
+      if (elementId === 'running' || elementId === 'enabled') {
+        logs = filterFrpLines(logs);
+      }
+
+      // Basic cleanup (remove hostname if present)
+      const finalLogs = logs.replace(/dashingorder\.aeza\.network/g, '');
       element.innerText = finalLogs || "No data available";
     }
-    // Process all pre elements on page load
+
     window.onload = () => {
-      ['version', 'running', 'enabled', 'server-configs', 'client-configs'].forEach(id => {
+      ['version', 'running', 'enabled'].forEach(id => {
         processLogs(id);
       });
     };
   </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.globe.min.js"></script>
-    <script>
-        VANTA.GLOBE({
-  el: "#bg",
-  mouseControls: false,
-  touchControls: false,
-  gyroControls: false,
-  minHeight: 200.00,
-  minWidth: 200.00,
-  scale: 1.00,
-  scaleMobile: 1.00,
-  color: 0x697ca0,
-  color2: 0xf21d1d,
-  size: 1.20,
-  backgroundColor: 0x0
-})
-</script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.globe.min.js"></script>
+  <script>
+    VANTA.GLOBE({
+      el: "#bg",
+      mouseControls: false,
+      touchControls: false,
+      gyroControls: false,
+      minHeight: 200.00,
+      minWidth: 200.00,
+      scale: 1.00,
+      scaleMobile: 1.00,
+      color: 0x697ca0,
+      color2: 0xf21d1d,
+      size: 1.20,
+      backgroundColor: 0x0
+    })
+  </script>
 </body>
 </html>
