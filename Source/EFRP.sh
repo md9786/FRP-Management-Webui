@@ -6,13 +6,14 @@ ERROR_STRING="connect to server error: dial tcp |connect to server error: timeou
 LOG_FILE="/var/log/frp_monitor.log" # Log file for this script's actions
 MAX_RESTARTS_IN_ROW=3 # Maximum consecutive restarts per service before waiting
 CHECK_INTERVAL_SECONDS=10 # How often to check logs for errors (in seconds)
-SCHEDULED_RESTART_INTERVAL_MINUTES=20 # How often to perform a scheduled restart (in minutes)
+AGGRESSIVE_RESTART_INTERVAL_MINUTES=20 # Aggressive restart every 20 minutes (TCP RST)
+DAILY_GRACEFUL_HOUR=5 # Hour (0-23) for daily graceful restart (~5:00 AM)
 RESTART_STABILIZE_SLEEP=3 # Time to wait after a restart for service to stabilize
 RESTART_WAIT_SECONDS=10 # Time to wait after reaching max restarts before trying again
 
 # --- Failover settings ---
-PRIMARY_DOMAIN="your_domestic_domain"        # main domain (matches your template)
-SECONDARY_DOMAIN="your_backup_domestic_domain"    # set your secondary domain here
+PRIMARY_DOMAIN="your_domestic_domain"
+SECONDARY_DOMAIN="your_backup_domestic_domain"
 FAILOVER_AFTER_RESTARTS=2                   # switch to secondary after this many consecutive error-based restarts on a service
 PRIMARY_RECHECK_MINUTES=10                  # probe primary every N minutes while on secondary
 
@@ -37,37 +38,77 @@ check_service_status() {
     fi
 }
 
-# Function to restart a specific FRP service
-restart_frp_service() {
-    local service_name="$1"
-    log_message "Initiating restart of frpc@$service_name.service."
+# Function to stop all FRP services (graceful: FIN packets)
+graceful_stop_all() {
+    log_message "Performing graceful stop of all frpc services (systemctl stop → clean FIN)."
+    for config_file in "$CONFIG_DIR"/*.toml; do
+        [ -e "$config_file" ] || continue
+        local svc="$(basename "$config_file" .toml)"
+        sudo systemctl stop "frpc@$svc.service"
+    done
+    # Short sleep to allow connections to close cleanly
+    sleep 5
+}
 
-    # Restart the FRP service
-    log_message "Restarting frpc@$service_name.service."
-    sudo systemctl restart "frpc@$service_name.service"
-    if [ $? -eq 0 ]; then
-        log_message "frpc@$service_name.service restarted successfully."
-        sleep "$RESTART_STABILIZE_SLEEP" # Give service time to start and log
-        if check_service_status "$service_name"; then
-            log_message "frpc@$service_name.service is active after restart."
-            return 0 # Success
+# Function to start all FRP services
+start_all_services() {
+    log_message "Starting all frpc services."
+    for config_file in "$CONFIG_DIR"/*.toml; do
+        [ -e "$config_file" ] || continue
+        local svc="$(basename "$config_file" .toml)"
+        sudo systemctl start "frpc@$svc.service"
+        sleep "$RESTART_STABILIZE_SLEEP"
+        if check_service_status "$svc"; then
+            log_message "frpc@$svc.service started successfully."
         else
-            log_message "frpc@$service_name.service is not active after restart. Check systemctl status."
-            return 1 # Failure
+            log_message "frpc@$svc.service failed to start."
         fi
+    done
+}
+
+# Function to aggressively restart a specific service (kill -9 → TCP RST)
+aggressive_restart_service() {
+    local service_name="$1"
+    log_message "Aggressive restart (kill -9 → TCP RST) of frpc@$service_name.service."
+
+    # Find PIDs of the frpc process for this instance
+    local pids=$(pgrep -f "frpc.*-c ${CONFIG_DIR}/${service_name}.toml")
+    if [ -n "$pids" ]; then
+        log_message "Killing frpc processes (PIDs: $pids) with SIGKILL for instant RST."
+        kill -9 $pids 2>/dev/null || true
+    fi
+
+    # Also ensure systemd knows the service is down
+    sudo systemctl stop "frpc@$service_name.service" 2>/dev/null || true
+
+    # Now start it again
+    sudo systemctl start "frpc@$service_name.service"
+    sleep "$RESTART_STABILIZE_SLEEP"
+    if check_service_status "$service_name"; then
+        log_message "frpc@$service_name.service aggressively restarted and is active."
+        return 0
     else
-        log_message "Failed to restart frpc@$service_name.service. Error code: $?."
-        return 1 # Failure
+        log_message "frpc@$service_name.service failed to become active after aggressive restart."
+        return 1
     fi
 }
 
-# --- New helper functions for domain switching ---
+# Function to aggressively restart ALL services
+aggressive_restart_all() {
+    log_message "Performing aggressive restart of ALL frpc services (TCP RST)."
+    for config_file in "$CONFIG_DIR"/*.toml; do
+        [ -e "$config_file" ] || continue
+        local svc="$(basename "$config_file" .toml)"
+        aggressive_restart_service "$svc"
+    done
+}
+
+# --- New helper functions for domain switching (unchanged) ---
 
 # Safely replace serverAddr in all configs to the provided domain
 set_domain_all_configs() {
   local new_domain="$1"
   log_message "Setting serverAddr to ${new_domain} in all configs"
-  # Use a loop to handle files safely
   for f in "$CONFIG_DIR"/*.toml; do
     if [ -f "$f" ]; then
         sed -i.bak -E "s|^(serverAddr[[:space:]]*=[[:space:]]*\").*(\")|\1${new_domain}\2|g" "$f"
@@ -93,13 +134,9 @@ validate_configs_or_revert() {
   return 0
 }
 
-# Restart all frpc@*.services
+# Restart all frpc@*.services aggressively (used after domain switch)
 restart_all_services() {
-  for config_file in "$CONFIG_DIR"/*.toml; do
-    [ -e "$config_file" ] || continue
-    local svc="$(basename "$config_file" .toml)"
-    restart_frp_service "$svc"
-  done
+  aggressive_restart_all
 }
 
 # Enable failover to SECONDARY_DOMAIN
@@ -136,9 +173,8 @@ disable_failover() {
   return 0
 }
 
-# Probe primary domain health: temporarily switch one service to PRIMARY, restart it, and check logs
+# Probe primary domain health (unchanged except restart uses aggressive mode)
 probe_primary_health() {
-  # Pick the first config as probe safely
   local probe_cfg=""
   for f in "$CONFIG_DIR"/*.toml; do
     if [ -f "$f" ]; then
@@ -150,7 +186,6 @@ probe_primary_health() {
   [ -n "$probe_cfg" ] || return 1
   local probe_svc="$(basename "$probe_cfg" .toml)"
 
-  # Backup and switch only this file to PRIMARY
   cp -f "$probe_cfg" "$probe_cfg.probe.bak"
   sed -i -E "s|^(serverAddr[[:space:]]*=[[:space:]]*\").*(\")|\1${PRIMARY_DOMAIN}\2|g" "$probe_cfg"
   
@@ -163,28 +198,20 @@ probe_primary_health() {
     fi
   fi
 
-  # Restart the probe service
-  restart_frp_service "$probe_svc"
+  aggressive_restart_service "$probe_svc"
 
-  # Check for recent errors in the last 2 minutes
   local err
   err=$(journalctl -u "frpc@$probe_svc.service" --since "2 minutes ago" --no-pager | grep -E "$ERROR_STRING")
-  local ok=$? # grep returns 0 if match found (error), 1 if not
+  local ok=$?
 
-  # Revert probe file to original state
   cp -f "$probe_cfg.probe.bak" "$probe_cfg"
   rm -f "$probe_cfg.probe.bak"
   
-  # IMPORTANT: Restart service to revert running state to match file (secondary) if we are not switching globally yet
-  # If we detect healthy primary, the global switch happens after this function returns.
-  # If we detect unhealthy, we must restore this service to secondary state.
   if [ $ok -eq 0 ]; then
-     # Errors found (unhealthy). Revert service to secondary.
-     restart_frp_service "$probe_svc"
+     aggressive_restart_service "$probe_svc"
      log_message "Primary probe detected errors; primary still unhealthy."
      return 1
   else
-     # Healthy. We don't restart here, because disable_failover will restart ALL services (including this one) shortly.
      log_message "Primary probe shows healthy; primary appears good."
      return 0
   fi
@@ -192,7 +219,6 @@ probe_primary_health() {
 
 # --- Main Script Logic ---
 
-# Ensure log file exists and is writable
 if ! touch "$LOG_FILE" 2>/dev/null; then
     echo "Error: Cannot create or write to log file: $LOG_FILE. Exiting."
     exit 1
@@ -200,14 +226,12 @@ fi
 
 log_message "Starting monitoring and restart script for FRP services..."
 
-# Check if configuration directory exists
 if [ ! -d "$CONFIG_DIR" ]; then
     log_message "Error: Configuration directory $CONFIG_DIR not found! Exiting."
     echo "Error: Configuration directory $CONFIG_DIR not found! Exiting."
     exit 1
 fi
 
-# Initialize restart counts for each service based on config files
 declare -A restart_counts
 config_files_found=false
 for config_file in "$CONFIG_DIR"/*.toml; do
@@ -226,92 +250,97 @@ if [ "$config_files_found" = false ]; then
     exit 1
 fi
 
-last_scheduled_restart_time=$(date +%s) # Initialize with current time in seconds since epoch
-last_primary_probe_time=0               # for periodic primary checks when in failover
+last_aggressive_restart_time=$(date +%s)
+last_daily_graceful_done=$(date +%s)
+last_primary_probe_time=0
+
+# For daily graceful: track if we already did it today
+today=$(date +%Y-%m-%d)
+daily_graceful_done=false
 
 while true; do
     current_time=$(date +%s)
-    
-    # Check for scheduled restart
-    if (( current_time - last_scheduled_restart_time >= SCHEDULED_RESTART_INTERVAL_MINUTES * 60 )); then
-        log_message "Performing scheduled restart (every $SCHEDULED_RESTART_INTERVAL_MINUTES minutes)."
-        for config_file in "$CONFIG_DIR"/*.toml; do
-            if [ ! -e "$config_file" ]; then
-                log_message "Error: No .toml configuration files found in $CONFIG_DIR. Skipping scheduled restart."
-                continue
-            fi
-            client_name=$(basename "$config_file" .toml)
-            service_name="$client_name"
-            restart_frp_service "$service_name"
-            if [ $? -ne 0 ]; then
-                log_message "Scheduled restart failed for frpc@$service_name.service. Script will continue to monitor."
-            fi
-            restart_counts["$service_name"]=0 # Reset error-based restart count after a scheduled restart
-        done
-        last_scheduled_restart_time=$current_time # Update last scheduled restart time
+    current_hour=$(date +%H)
+    current_date=$(date +%Y-%m-%d)
+
+    # Daily graceful restart at ~5:00 AM (only once per day)
+    if [ "$current_date" != "$today" ]; then
+        # New day started
+        today="$current_date"
+        daily_graceful_done=false
     fi
 
-    # Check each service for errors
+    if [ "$daily_graceful_done" = false ] && [ "$current_hour" -ge "$DAILY_GRACEFUL_HOUR" ]; then
+        log_message "Performing daily graceful restart (clean FIN) at ~${DAILY_GRACEFUL_HOUR}:00."
+        graceful_stop_all
+        start_all_services
+        # Reset all error-based counters after graceful restart
+        for svc in "${!restart_counts[@]}"; do
+            restart_counts["$svc"]=0
+        done
+        daily_graceful_done=true
+    fi
+
+    # Aggressive restart every 20 minutes
+    if (( current_time - last_aggressive_restart_time >= AGGRESSIVE_RESTART_INTERVAL_MINUTES * 60 )); then
+        log_message "Performing scheduled aggressive restart (every $AGGRESSIVE_RESTART_INTERVAL_MINUTES minutes → TCP RST)."
+        aggressive_restart_all
+        # Reset error-based counters after aggressive restart
+        for svc in "${!restart_counts[@]}"; do
+            restart_counts["$svc"]=0
+        done
+        last_aggressive_restart_time=$current_time
+    fi
+
+    # Check each service for errors → use aggressive restart on error
     for config_file in "$CONFIG_DIR"/*.toml; do
-        if [ ! -e "$config_file" ]; then
-            log_message "Error: No .toml configuration files found in $CONFIG_DIR. Skipping error check."
-            continue
-        fi
+        [ -e "$config_file" ] || continue
         client_name=$(basename "$config_file" .toml)
         service_name="$client_name"
-        log_message "Checking for error string: '$ERROR_STRING' in frpc@$service_name.service logs..."
+        log_message "Checking logs for frpc@$service_name.service..."
 
-        # Use journalctl to get the last few lines of the service log and capture any error
         error_output=$(journalctl -u "frpc@$service_name.service" --no-pager -n 5 | grep -E "$ERROR_STRING")
         if [ -n "$error_output" ]; then
-            log_message "ERROR DETECTED in frpc@$service_name.service logs: $error_output"
+            log_message "ERROR DETECTED in frpc@$service_name.service: $error_output"
 
             if [ "${restart_counts["$service_name"]}" -ge "$MAX_RESTARTS_IN_ROW" ]; then
-                log_message "Maximum consecutive error-based restarts ($MAX_RESTARTS_IN_ROW) reached for frpc@$service_name.service. Waiting $RESTART_WAIT_SECONDS seconds before retrying."
+                log_message "Max consecutive restarts reached for $service_name. Waiting $RESTART_WAIT_SECONDS seconds."
                 sleep "$RESTART_WAIT_SECONDS"
-                restart_counts["$service_name"]=0 # Reset restart count to allow retry
+                restart_counts["$service_name"]=0
             fi
 
             restart_counts["$service_name"]=$((restart_counts["$service_name"] + 1))
-            log_message "Error-based restart attempt #${restart_counts["$service_name"]} for frpc@$service_name.service."
+            log_message "Error-based aggressive restart #${restart_counts["$service_name"]} for frpc@$service_name.service."
 
-            # If failover not active and threshold reached, switch all configs to secondary
             if [ ! -f "$failover_flag_file" ] && [ "${restart_counts["$service_name"]}" -ge "$FAILOVER_AFTER_RESTARTS" ]; then
-                log_message "Threshold reached on $service_name; enabling failover to secondary domain."
+                log_message "Failover threshold reached on $service_name; switching to secondary domain."
                 if enable_failover; then
                   last_primary_probe_time=$(date +%s)
                 fi
             fi
 
-            # Call the restart function
-            restart_frp_service "$service_name"
-            if [ $? -ne 0 ]; then
-                log_message "Error-based restart failed for frpc@$service_name.service. Continuing to monitor other services."
-            fi
+            aggressive_restart_service "$service_name"
         else
-            # If no error detected, reset the error-based restart counter for this service
             if [ "${restart_counts["$service_name"]}" -gt 0 ]; then
-                log_message "No error detected in the last check for frpc@$service_name.service. Resetting consecutive error-based restart count."
+                log_message "No recent error for $service_name; resetting counter."
             fi
             restart_counts["$service_name"]=0
-            log_message "No error detected. frpc@$service_name.service appears to be running normally."
         fi
     done
 
-    # While in failover, periodically probe primary and revert if healthy
+    # Periodic primary probe while in failover
     if [ -f "$failover_flag_file" ]; then
       now=$(date +%s)
       if (( now - last_primary_probe_time >= PRIMARY_RECHECK_MINUTES * 60 )); then
-        log_message "Probing primary domain availability."
+        log_message "Probing primary domain health while on secondary."
         if probe_primary_health; then
           disable_failover
         else
-          log_message "Primary still unhealthy; staying on secondary."
+          log_message "Primary still unhealthy; remaining on secondary."
         fi
         last_primary_probe_time=$now
       fi
     fi
 
-    # Wait before the next check for errors
     sleep "$CHECK_INTERVAL_SECONDS"
 done
